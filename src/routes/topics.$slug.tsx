@@ -1,11 +1,11 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { ArrowLeft, ArrowUpRight } from 'lucide-react'
 import { useState } from 'react'
-import { sampleTopics } from '../data/sample-topics'
+import { getTopic } from '../server/topics.functions'
 
 export const Route = createFileRoute('/topics/$slug')({
-  loader: ({ params }) => {
-    const topic = sampleTopics.find((topic) => topic.slug === params.slug)
+  loader: async ({ params }) => {
+    const topic = await getTopic({ data: { slug: params.slug } })
     if (!topic) throw notFound()
     return topic
   },

@@ -47,7 +47,7 @@ Start with three to five outlets and validate this loop:
 
 RSS/Atom ingestion → deduplicate articles → identify relevant subjects and content type → group related coverage into event topics → publish indexable topic pages → let readers discover topics and open original articles.
 
-The sample feed → game → topic → original article flow is established. This prototype uses clearly labeled sample data to settle the reading experience before adding database-backed features. Do not add ingestion, authentication, AI, or community features yet. Start eventual ingestion with deterministic matching signals and allow human correction of topic groupings. Introduce embeddings or LLM enrichment only when evaluation shows they improve results.
+The sample feed → game → topic → original article flow is established. The current milestone adds a minimal Supabase/PostgreSQL schema, Drizzle migrations, repeatable historical seed data, and server-backed reads while preserving this UI. Keep an explicit sample mode for previewing without credentials. Do not add ingestion, authentication, AI, or community features yet. Start eventual ingestion with deterministic matching signals and allow human correction of topic groupings. Introduce embeddings or LLM enrichment only when evaluation shows they improve results.
 
 Personalization, comments, usefulness feedback, detailed ownership/disclosure records, correction histories, author profiles, reputation systems, and critic-versus-player comparisons can follow as the product develops. They are not prerequisites for the first useful discovery experience.
 
@@ -56,12 +56,14 @@ Personalization, comments, usefulness feedback, detailed ownership/disclosure re
 - **Web application:** TanStack Start, React, Vite, and TanStack Router. Public discovery and topic pages should be indexable and server rendered where practical. Sample prototypes should be clearly labeled and excluded from indexing.
 - **Interactive data:** TanStack Query for shared server state, refreshes, and feedback interactions; route loaders for initial page data.
 - **UI:** Tailwind CSS and shadcn/ui.
-- **Database:** PostgreSQL on Supabase, accessed through server-side services using Drizzle ORM. The planned content model covers outlets, articles, event topics, article-topic membership, and relevant subject connections, including games. User, community, and transparency records grow with the features that need them.
+- **Database:** PostgreSQL on Supabase, accessed through server-side services using Drizzle ORM. The initial content schema covers outlets, articles, event topics, article-topic membership, and relevant subject connections, including games. User, community, and transparency records grow with the features that need them.
 - **Authentication:** Supabase Auth is planned for accounts and user-specific features.
 - **Hosting and ingestion:** Cloudflare Workers via the official Vite plugin. Scheduled ingestion, enrichment, and clustering run separately from serving web requests, while sharing the domain model.
 - **Supporting tools:** Zod, environment validation where appropriate, and Biome. Supabase `pgvector` remains an option when semantic matching proves useful.
 
 These are directional choices, not instructions to implement the entire stack now. Detailed framework usage and coding practices belong in the relevant skills or technical documentation.
+
+Keep a single package for now. Use `src/server/*.functions.ts` for TanStack server functions and `.server.ts` modules for database connections and queries; route loaders are isomorphic and must not query Postgres directly. Revisit workspaces when a separate ingestion app needs shared code; Turborepo is not a prerequisite. Drizzle-generated migrations are the content schema history. Load the installed Supabase and Postgres skills for database work, while retaining this project's Drizzle workflow. See `docs/database.md` for setup and access boundaries.
 
 ## Longer-term business direction
 

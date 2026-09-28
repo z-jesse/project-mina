@@ -1,15 +1,14 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import TopicList from '../components/TopicList'
-import { sampleGtaGame, sampleTopics } from '../data/sample-topics'
+import { getGameNews } from '../server/topics.functions'
 
 export const Route = createFileRoute('/games/grand-theft-auto-vi')({
-  loader: () => ({
-    ...sampleGtaGame,
-    topics: sampleTopics.filter((topic) =>
-      topic.subjects.includes(sampleGtaGame.name),
-    ),
-  }),
+  loader: async () => {
+    const game = await getGameNews()
+    if (!game) throw notFound()
+    return game
+  },
   head: () => ({
     meta: [
       { title: 'Grand Theft Auto VI news | Games Watchdog sample game page' },

@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import TopicList from '../components/TopicList'
-import { sampleTopics } from '../data/sample-topics'
+import { getNews } from '../server/topics.functions'
 
 export const Route = createFileRoute('/')({
-  loader: () => sampleTopics,
+  loader: () => getNews(),
   head: () => ({
     meta: [
       { title: 'News | Games Watchdog sample feed' },
