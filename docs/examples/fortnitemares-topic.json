@@ -1,0 +1,19 @@
+{
+  "slug": "fortnite-five-nights-at-freddys-fortnitemares",
+  "title": "Fortnite confirms a Five Nights at Freddy’s crossover for Fortnitemares",
+  "eventDate": "2026-09-27",
+  "description": "Epic’s Halloween event will feature a crossover with Five Nights at Freddy’s.",
+  "summary": "Eurogamer reports that Epic has confirmed a Five Nights at Freddy’s crossover for Fortnite’s Fortnitemares event. The coverage below reports on that announcement.",
+  "summaryIsAi": true,
+  "subjects": [
+    { "slug": "fortnite", "name": "Fortnite", "kind": "game" },
+    { "slug": "five-nights-at-freddys", "name": "Five Nights at Freddy’s", "kind": "game" },
+    { "slug": "epic-games", "name": "Epic Games", "kind": "company" }
+  ],
+  "articles": [
+    {
+      "url": "https://www.eurogamer.net/fortnite-five-nights-at-freddys-fortnitemares-collab",
+      "kind": "reporting"
+    }
+  ]
+}

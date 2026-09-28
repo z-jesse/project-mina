@@ -51,6 +51,7 @@ export async function seedContent(db: NodePgDatabase<typeof schema>) {
           summary: topic.summary,
           status: 'published',
           isSample: true,
+          summaryIsAi: true,
           announcement: topic.announcement,
           image: topic.image,
         })
@@ -105,6 +106,7 @@ export async function seedContent(db: NodePgDatabase<typeof schema>) {
             author: article.author,
             publishedDate: article.date,
             description: article.description,
+            kind: 'reporting',
             imageUrl: article.image,
           })
           .onConflictDoNothing()

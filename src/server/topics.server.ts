@@ -29,9 +29,7 @@ async function selectTopics(
   db: NodePgDatabase<typeof schema>,
   filter: { slug?: string; subjectId?: number } = {},
 ): Promise<Topic[]> {
-  // These routes still say "historical sample". Real/draft topics must not appear
-  // until the live-content UI and editorial publishing flow are implemented.
-  const conditions = [eq(topics.status, 'published'), eq(topics.isSample, true)]
+  const conditions = [eq(topics.status, 'published')]
   if (filter.slug) conditions.push(eq(topics.slug, filter.slug))
   if (filter.subjectId !== undefined) {
     conditions.push(
@@ -73,6 +71,8 @@ async function selectTopics(
     .orderBy(asc(topicSubjects.position))
 
   return rows.map((row) => ({
+    isSample: row.isSample,
+    summaryIsAi: row.isSample || row.summaryIsAi,
     slug: row.slug,
     title: row.title,
     date: row.eventDate,
@@ -89,12 +89,15 @@ async function selectTopics(
       .map(({ article, outlet }) => ({
         outlet,
         author: article.author ?? '',
-        date: article.publishedDate,
-        dateLabel: dateLabel(article.publishedDate),
+        date: article.publishedAt?.toISOString() ?? article.publishedDate,
+        dateLabel: article.publishedAt
+          ? `${new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }).format(article.publishedAt)} UTC`
+          : dateLabel(article.publishedDate),
         title: article.title,
         description: article.description,
         url: article.url,
         image: article.imageUrl ?? undefined,
+        descriptionSource: article.feedUrl ? 'publisher' : undefined,
       })),
   }))
 }

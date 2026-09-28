@@ -26,6 +26,10 @@ export default function TopicList({
               <h2 id={`title-${topic.slug}`}>{topic.title}</h2>
               <p className="feed-description">{topic.description}</p>
               <p className="feed-meta">
+                {topic.isSample && <span>Historical sample</span>}
+                {!topic.isSample && topic.summaryIsAi && (
+                  <span>AI-assisted summary</span>
+                )}
                 <time dateTime={topic.date}>{topic.dateLabel}</time>
                 <span>
                   {topic.articles.length}{' '}

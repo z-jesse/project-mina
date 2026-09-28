@@ -2,6 +2,8 @@ Welcome to your new TanStack Start app!
 
 The news prototype supports local samples and a Supabase/PostgreSQL content
 database. See [database setup and verification](docs/database.md).
+For the first local RSS import and manual publishing commands, see
+[article ingestion and topic review](docs/ingestion.md).
 
 # Getting Started
 

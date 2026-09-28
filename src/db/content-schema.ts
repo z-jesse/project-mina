@@ -12,6 +12,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core'
 import type { Topic } from '../lib/content'
 
@@ -66,14 +67,24 @@ export const articles = pgTable(
     author: text(),
     // Samples have day precision; do not manufacture publication times.
     publishedDate: date('published_date').notNull(),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    feedUrl: text('feed_url'),
+    feedGuid: text('feed_guid'),
+    importedAt: timestamp('imported_at', { withTimezone: true }),
     description: text().notNull(),
-    kind: articleKind().notNull().default('reporting'),
+    kind: articleKind(),
     imageUrl: text('image_url'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (table) => [index('articles_outlet_idx').on(table.outletId)],
+  (table) => [
+    index('articles_outlet_idx').on(table.outletId),
+    uniqueIndex('articles_outlet_feed_guid_unique').on(
+      table.outletId,
+      table.feedGuid,
+    ),
+  ],
 ).enableRLS()
 
 export const topics = pgTable(
@@ -87,6 +98,7 @@ export const topics = pgTable(
     summary: text().notNull(),
     status: topicStatus().notNull().default('draft'),
     isSample: boolean('is_sample').notNull().default(false),
+    summaryIsAi: boolean('summary_is_ai').notNull().default(false),
     announcement: jsonb().$type<Topic['announcement']>(),
     image: jsonb().$type<Topic['image']>(),
     createdAt: timestamp('created_at', { withTimezone: true })

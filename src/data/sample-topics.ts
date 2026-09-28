@@ -51,6 +51,8 @@ const gtaArticles = [
 
 export const sampleTopics: Topic[] = [
   {
+    isSample: true,
+    summaryIsAi: true,
     slug: 'steamos-3-7-handheld-support',
     title: 'SteamOS expands beyond the Steam Deck',
     date: '2025-05-23',
@@ -84,6 +86,8 @@ export const sampleTopics: Topic[] = [
     ],
   },
   {
+    isSample: true,
+    summaryIsAi: true,
     slug: 'gta-6-second-trailer',
     title: 'GTA 6’s second trailer takes a closer look at Jason and Lucia',
     date: '2025-05-06',
@@ -117,6 +121,8 @@ export const sampleTopics: Topic[] = [
     ],
   },
   {
+    isSample: true,
+    summaryIsAi: true,
     slug: 'gta-6-may-2026-delay',
     title: 'GTA 6 moves from fall 2025 to May 2026',
     date: '2025-05-02',
@@ -142,6 +148,8 @@ export const sampleTopics: Topic[] = [
     articles: gtaArticles,
   },
   {
+    isSample: true,
+    summaryIsAi: true,
     slug: 'ea-respawn-job-cuts',
     title: 'EA cuts jobs as Respawn cancels two projects',
     date: '2025-04-30',
@@ -166,6 +174,8 @@ export const sampleTopics: Topic[] = [
     ],
   },
   {
+    isSample: true,
+    summaryIsAi: true,
     slug: 'oblivion-remastered-launch',
     title: 'Oblivion Remastered launches on PC and consoles',
     date: '2025-04-22',
@@ -199,6 +209,8 @@ export const sampleTopics: Topic[] = [
     ],
   },
   {
+    isSample: true,
+    summaryIsAi: true,
     slug: 'switch-2-launch-date',
     title: 'Nintendo sets a June 5 launch for Switch 2',
     date: '2025-04-02',
@@ -241,6 +253,8 @@ export const sampleTopics: Topic[] = [
     ],
   },
   {
+    isSample: true,
+    summaryIsAi: true,
     slug: 'gta-6-first-trailer',
     title: 'GTA 6’s first trailer reveals a return to Vice City',
     date: '2023-12-04',

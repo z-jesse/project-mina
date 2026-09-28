@@ -11,11 +11,10 @@ export const Route = createFileRoute('/games/grand-theft-auto-vi')({
   },
   head: () => ({
     meta: [
-      { title: 'Grand Theft Auto VI news | Games Watchdog sample game page' },
+      { title: 'Grand Theft Auto VI news | Games Watchdog' },
       {
         name: 'description',
-        content:
-          'Selected historical GTA VI news, organized into individual event topics.',
+        content: 'GTA VI news, organized into individual event topics.',
       },
       { name: 'robots', content: 'noindex, nofollow' },
     ],
@@ -33,8 +32,10 @@ function GamePage() {
           <ArrowLeft size={15} aria-hidden="true" /> All news
         </Link>
         <p className="topic-sample-note">
-          Historical sample · Selected 2023–2025 coverage, not current news.
-          Summaries are AI-written for this prototype.
+          {game.topics.length > 0 &&
+          game.topics.every((topic) => topic.isSample)
+            ? 'Historical samples · Selected 2023–2025 coverage. Summaries are AI-written for this prototype.'
+            : 'Preview · Historical sample topics are labeled separately.'}
         </p>
         <header className="topic-intro game-intro">
           <p className="game-kind">Game</p>

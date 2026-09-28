@@ -4,6 +4,9 @@ import { config } from 'dotenv'
 import { eq, inArray, sql } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { seedContent } from '../scripts/seed-content'
+import { inbox, saveDraft, setPublication } from '../scripts/editorial'
+import { importNews, parseNewsFeed } from '../scripts/rss'
+import { testFeed } from './fixtures/rss'
 import { sampleTopics } from '../src/data/sample-topics'
 import { withDatabase } from '../src/db/client.server'
 import {
@@ -95,7 +98,7 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
   })
 
   await t.test(
-    'draft/live records stay out of historical preview; membership allows shared topics',
+    'drafts stay hidden, published topics appear, and membership allows shared topics',
     async () => {
       await withDatabase(async (db) => {
         const inserted = await db
@@ -120,9 +123,9 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
           ])
           .returning()
         try {
-          assert.equal((await listTopics()).length, sampleTopics.length)
+          assert.equal((await listTopics()).length, sampleTopics.length + 1)
           assert.equal(await findTopic('test-draft'), undefined)
-          assert.equal(await findTopic('test-live'), undefined)
+          assert.equal((await findTopic('test-live'))?.isSample, false)
           const [gta] = await db
             .select()
             .from(subjects)
@@ -136,22 +139,18 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
             { topicId: inserted[0].id, subjectId: gta.id, position: 0 },
             { topicId: inserted[0].id, subjectId: rockstar.id, position: 1 },
           ])
-          await db
-            .insert(topicArticles)
-            .values({
-              topicId: inserted[0].id,
-              articleId: article.id,
-              position: 0,
-            })
+          await db.insert(topicArticles).values({
+            topicId: inserted[0].id,
+            articleId: article.id,
+            position: 0,
+          })
           assert.equal((await getGtaGame())?.topics.length, 3)
           await assert.rejects(
-            db
-              .insert(topicArticles)
-              .values({
-                topicId: inserted[0].id,
-                articleId: article.id,
-                position: 1,
-              }),
+            db.insert(topicArticles).values({
+              topicId: inserted[0].id,
+              articleId: article.id,
+              position: 1,
+            }),
           )
           await assert.rejects(
             db.insert(articles).values({
@@ -196,6 +195,150 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
   )
 
   await t.test(
+    'import, repeat import, draft review, publish, and unpublish',
+    async () => {
+      await withDatabase(async (db) => {
+        const feed = await parseNewsFeed(testFeed)
+        const first = feed.items[0]
+        const second = {
+          ...first,
+          url: 'https://www.eurogamer.net/mina-test-reaction',
+          feedGuid: 'mina-test-reaction-guid',
+        }
+        const urls = [first.url, second.url]
+        const topicSlug = 'mina-test-reviewed-event'
+        const draft = {
+          slug: topicSlug,
+          title: 'Test event',
+          eventDate: '2026-09-25',
+          description: 'A reviewed description.',
+          summary: 'A reviewed topic summary.',
+          summaryIsAi: true,
+          subjects: [
+            {
+              slug: 'grand-theft-auto-vi',
+              name: 'Grand Theft Auto VI',
+              kind: 'game',
+            },
+          ],
+          articles: [
+            { url: first.url, kind: 'reporting' },
+            { url: second.url, kind: 'analysis' },
+          ],
+        }
+        try {
+          assert.deepEqual(
+            await importNews(db, { items: [first, first, second], skipped: 0 }),
+            { inserted: 2, duplicates: 1, skipped: 0 },
+          )
+          assert.deepEqual(await importNews(db, feed), {
+            inserted: 0,
+            duplicates: 1,
+            skipped: 0,
+          })
+          assert.equal(
+            (
+              await importNews(db, {
+                items: [
+                  {
+                    ...first,
+                    url: 'https://www.eurogamer.net/renamed-test-url',
+                  },
+                ],
+                skipped: 0,
+              })
+            ).inserted,
+            0,
+          )
+          assert.equal(
+            (
+              await importNews(db, {
+                items: [{ ...first, feedGuid: 'changed-guid' }],
+                skipped: 0,
+              })
+            ).inserted,
+            0,
+          )
+          assert.equal((await listTopics()).length, sampleTopics.length)
+          assert.ok((await inbox(db)).some((row) => row.url === first.url))
+          await db
+            .update(articles)
+            .set({ title: 'Editorial correction' })
+            .where(eq(articles.url, first.url))
+          await importNews(db, feed)
+          assert.equal(
+            (
+              await db
+                .select()
+                .from(articles)
+                .where(eq(articles.url, first.url))
+            )[0].title,
+            'Editorial correction',
+          )
+          await assert.rejects(
+            saveDraft(db, { ...draft, slug: sampleTopics[0].slug }),
+          )
+          await assert.rejects(
+            saveDraft(db, {
+              ...draft,
+              articles: [
+                {
+                  url: 'https://www.eurogamer.net/not-imported',
+                  kind: 'reporting',
+                },
+              ],
+            }),
+          )
+          await saveDraft(db, draft)
+          assert.equal(await findTopic(topicSlug), undefined)
+          assert.ok(!(await inbox(db)).some((row) => urls.includes(row.url)))
+          // A failed edit must roll back membership changes as well as topic text.
+          await assert.rejects(
+            saveDraft(db, {
+              ...draft,
+              title: 'Bad edit',
+              subjects: [
+                {
+                  slug: 'grand-theft-auto-vi',
+                  name: 'Wrong name',
+                  kind: 'company',
+                },
+              ],
+            }),
+          )
+          await setPublication(db, topicSlug, true)
+          const published = await findTopic(topicSlug)
+          assert.equal(published?.title, draft.title)
+          assert.equal(published?.isSample, false)
+          assert.equal(published?.summaryIsAi, true)
+          assert.deepEqual(
+            published?.articles.map((a) => a.url),
+            urls,
+          )
+          assert.equal(published?.articles[0].date, '2026-09-25T08:30:00.000Z')
+          assert.equal(published?.articles[0].descriptionSource, 'publisher')
+          assert.equal((await getGtaGame())?.topics.length, 4)
+          await assert.rejects(saveDraft(db, draft))
+          await setPublication(db, topicSlug, false)
+          assert.equal(await findTopic(topicSlug), undefined)
+          await saveDraft(db, {
+            ...draft,
+            articles: [...draft.articles].reverse(),
+          })
+          await setPublication(db, topicSlug, true)
+          assert.deepEqual(
+            (await findTopic(topicSlug))?.articles.map((a) => a.url),
+            [...urls].reverse(),
+          )
+        } finally {
+          await db.delete(topics).where(eq(topics.slug, topicSlug))
+          await db.delete(articles).where(inArray(articles.url, urls))
+        }
+      })
+    },
+  )
+
+  await t.test(
     'RLS denies public-role reads and writes even when table grants exist',
     async () => {
       await withDatabase(async (db) => {
@@ -229,15 +372,13 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
         await assert.rejects(
           db.transaction(async (tx) => {
             await tx.execute(sql`set local role mina_test_reader`)
-            await tx
-              .insert(topics)
-              .values({
-                slug: 'forbidden-write',
-                title: 'No',
-                eventDate: '2025-01-01',
-                description: '',
-                summary: '',
-              })
+            await tx.insert(topics).values({
+              slug: 'forbidden-write',
+              title: 'No',
+              eventDate: '2025-01-01',
+              description: '',
+              summary: '',
+            })
           }),
         )
       })

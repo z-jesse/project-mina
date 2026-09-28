@@ -1,5 +1,7 @@
 // Client-safe page data. Database modules must not be imported by UI components.
 export type Topic = {
+  isSample: boolean
+  summaryIsAi: boolean
   slug: string
   title: string
   date: string
@@ -26,5 +28,6 @@ export type Topic = {
     description: string
     url: string
     image?: string
+    descriptionSource?: 'publisher'
   }[]
 }

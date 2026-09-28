@@ -1,7 +1,8 @@
 # Content database
 
 The current milestone serves the same historical preview from either fixtures or
-PostgreSQL. It adds no ingestion, accounts, or public write endpoints.
+PostgreSQL. A local [RSS import and manual topic review workflow](ingestion.md)
+now adds real coverage. There are no accounts or public write endpoints.
 
 ## Daily local development
 
@@ -47,9 +48,9 @@ hosted Supabase. The existing Windows PostgreSQL service is left unchanged.
 
 `CONTENT_SOURCE=sample` (the default) keeps the preview usable without a database.
 Database mode fails on connection/query errors; it never silently substitutes
-fixtures. Only published topics marked `is_sample=true` appear in these prototype
-pages, so the historical/AI-written labels stay accurate. Feed reads are capped
-at 50 topics; pagination and live-content presentation come with ingestion.
+fixtures. Only published topics appear; ungrouped imports and drafts stay hidden.
+Historical samples remain labeled alongside reviewed real topics. Feed reads are
+capped at 50 topics; pagination is deferred. Sample mode still uses only fixtures.
 
 The seed is transactional and repeatable: it inserts missing sample topics and
 preserves existing topics and editorial changes. A non-sample slug collision
@@ -65,8 +66,9 @@ aborts the seed. It does not delete/reset any data.
 - `subjects`: game, company, platform, storefront, or cross-cutting subject.
 - `topic_articles` and `topic_subjects`: ordered many-to-many memberships.
 
-Date-only fixtures remain PostgreSQL `date` values. Exact publication timestamps
-can be added when ingestion supplies that precision. Image/announcement metadata
+Date-only fixtures remain PostgreSQL `date` values. Imported articles also retain
+the feed's exact publication timestamp, feed URL/GUID, and import time. Their
+content kind remains unset until reviewed. Image/announcement metadata
 uses JSONB; entities and memberships use foreign keys. A topic needs only one
 article, and can appear on multiple subject pages under the same topic URL.
 
@@ -91,7 +93,7 @@ We do not keep sockets in a cross-request global on Cloudflare Workers.
 All six content tables have RLS enabled with **no public policies**. Browser
 `anon`/`authenticated` access is denied even if Supabase grants table access.
 The initial server connection uses database-owner credentials (local or Supabase),
-which bypass RLS; the server queries explicitly filter published sample topics.
+which bypass RLS; the server queries explicitly filter published topics.
 Do not treat RLS as protection against a bug in those owner-level queries. Before
 a public launch, provision a restricted runtime database role, leaving migration
 credentials separate. No database write server functions are exposed here.

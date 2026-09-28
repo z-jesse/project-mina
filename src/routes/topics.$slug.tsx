@@ -12,12 +12,11 @@ export const Route = createFileRoute('/topics/$slug')({
   head: ({ loaderData }) => ({
     meta: [
       {
-        title: `${loaderData?.title ?? 'Topic not found'} | Games Watchdog sample topic`,
+        title: `${loaderData?.title ?? 'Topic not found'} | Games Watchdog${loaderData?.isSample ? ' sample topic' : ''}`,
       },
       {
         name: 'description',
-        content:
-          loaderData?.description ?? 'This sample topic could not be found.',
+        content: loaderData?.description ?? 'This topic could not be found.',
       },
       { name: 'robots', content: 'noindex, nofollow' },
     ],
@@ -27,9 +26,7 @@ export const Route = createFileRoute('/topics/$slug')({
     <main id="main-content" className="topic-page">
       <div className="topic-wrap topic-intro">
         <h1>Topic not found</h1>
-        <p className="topic-summary">
-          This topic isn’t part of the sample feed.
-        </p>
+        <p className="topic-summary">This topic isn’t available.</p>
         <Link to="/">Back to news</Link>
       </div>
     </main>
@@ -49,10 +46,14 @@ function TopicPage() {
         <Link to="/" className="topic-back">
           <ArrowLeft size={15} aria-hidden="true" /> Back to news
         </Link>
-        <p className="topic-sample-note">
-          Historical sample · Coverage from {topic.date.slice(0, 4)}, not
-          current news. Summaries are AI-written for this prototype.
-        </p>
+        {topic.isSample ? (
+          <p className="topic-sample-note">
+            Historical sample · Coverage from {topic.date.slice(0, 4)}, not
+            current news. Summaries are AI-written for this prototype.
+          </p>
+        ) : topic.summaryIsAi ? (
+          <p className="topic-sample-note">AI-assisted topic summary.</p>
+        ) : null}
         <header className="topic-intro">
           <ul className="topic-subjects" aria-label="Related subjects">
             {topic.subjects.map((subject) => (
@@ -123,6 +124,12 @@ function TopicPage() {
                   <p className="topic-article-description">
                     {article.description}
                   </p>
+                  {article.descriptionSource === 'publisher' &&
+                    article.description && (
+                      <p className="topic-article-author">
+                        Description from {article.outlet}’s RSS feed.
+                      </p>
+                    )}
                   {article.author && (
                     <p className="topic-article-author">By {article.author}</p>
                   )}
