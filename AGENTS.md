@@ -65,6 +65,8 @@ These are directional choices, not instructions to implement the entire stack no
 
 Keep a single package for now. Use `src/server/*.functions.ts` for TanStack server functions and `.server.ts` modules for database connections and queries; route loaders are isomorphic and must not query Postgres directly. Revisit workspaces when a separate ingestion app needs shared code; Turborepo is not a prerequisite. Drizzle-generated migrations are the content schema history. Load the installed Supabase and Postgres skills for database work, while retaining this project's Drizzle workflow. See `docs/database.md` for setup and access boundaries.
 
+Use local PostgreSQL for everyday development and a separate disposable database for integration tests. Hosted Supabase is for deployment and explicit integration checks; it is not required for the current development loop. The local and hosted databases use the same content schema and migrations.
+
 ## Longer-term business direction
 
 Explore voluntary support during validation, optional paid utility features once the product becomes habitual, and potentially aggregated data/API access later. Commercial relationships must be disclosed and must not influence credibility signals.

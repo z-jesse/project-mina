@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { config } from 'dotenv'
 import { eq, inArray, sql } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { seedContent } from '../scripts/seed-content'
@@ -13,6 +14,8 @@ import {
   topicSubjects,
 } from '../src/db/content-schema'
 import { findTopic, getGtaGame, listTopics } from '../src/server/topics.server'
+
+config({ path: ['.env.local', '.env'], quiet: true })
 
 const connectionString = process.env.TEST_DATABASE_URL
 if (!connectionString)

@@ -3,7 +3,37 @@
 The current milestone serves the same historical preview from either fixtures or
 PostgreSQL. It adds no ingestion, accounts, or public write endpoints.
 
-## Local setup / Supabase development project
+## Daily local development
+
+This Windows workstation uses native PostgreSQL 18, listening only on
+`127.0.0.1:55438`. The persistent data directory is
+`$env:LOCALAPPDATA\project-mina\postgres`, outside the repository and build caches.
+`mina_development` holds development content; `mina_content_test` is separate and
+reserved for the integration tests. Both use password authentication.
+
+The ignored `.env.local` contains local `DATABASE_URL`, `TEST_DATABASE_URL`, and
+`CONTENT_SOURCE=database`. `DATABASE_MIGRATION_URL` is unnecessary locally; scripts
+fall back to `DATABASE_URL`. Previously entered Supabase settings are preserved
+in ignored `.env.supabase.local`, which our normal development commands do not load.
+
+After a computer restart, start the database in PowerShell:
+
+```powershell
+pg_ctl -D "$env:LOCALAPPDATA\project-mina\postgres" -l "$env:LOCALAPPDATA\project-mina\postgres.log" -w start
+npm run dev
+```
+
+Run `npm run test:db` to test the separate test database. Stop the local database
+when finished with:
+
+```powershell
+pg_ctl -D "$env:LOCALAPPDATA\project-mina\postgres" -m fast -w stop
+```
+
+Stopping the server preserves both databases. These local operations do not use
+hosted Supabase. The existing Windows PostgreSQL service is left unchanged.
+
+## Another local database / hosted Supabase setup
 
 1. Copy the keys in `.env.example` into the ignored `.env.local`, preserving any
    existing values. Never commit connection credentials.

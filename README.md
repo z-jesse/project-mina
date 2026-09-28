@@ -1,5 +1,8 @@
 Welcome to your new TanStack Start app!
 
+The news prototype supports local samples and a Supabase/PostgreSQL content
+database. See [database setup and verification](docs/database.md).
+
 # Getting Started
 
 To run this application:
