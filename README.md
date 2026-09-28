@@ -4,6 +4,8 @@ The news prototype supports local samples and a Supabase/PostgreSQL content
 database. See [database setup and verification](docs/database.md).
 For the first local RSS import and manual publishing commands, see
 [article ingestion and topic review](docs/ingestion.md).
+For the agreed product direction, open decisions, and next milestones, see
+[discovery, topics, and community](docs/product-direction.md).
 
 # Getting Started
 
