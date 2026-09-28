@@ -3,42 +3,60 @@
 
 ## Status and purpose
 
-`project-mina` is the repository codename. **Games Watchdog** is the leading product name; naming remains open. The repo is currently a TanStack Start scaffold, with product features still to be built.
+`project-mina` is the repository codename. **Games Watchdog** is the leading product name; naming remains open. The repo is a TanStack Start scaffold with a sample news feed, topic detail pages, and a GTA VI game page. Product features are still to be built.
 
-Build a game-centered media discovery platform that helps readers find gaming news and understand the full context around it. Discovery comes first; transparency and accountability emerge through comparing coverage and its provenance. The public posture is constructive: "see the whole story."
+Build an easy-to-read gaming news discovery site. Help readers find an interesting event, understand what happened, and choose an article to read. Keep the experience simple; attribution and access to original coverage provide context. The public posture is constructive: "see the whole story."
 
 ## Intended experience
 
-Users follow games and discover relevant news. Coverage from different outlets is grouped by the real-world event it describes, giving readers one story page where they can compare headlines, summaries, sources, timestamps, framing, and disclosures.
+Coverage from different outlets is grouped into **topics**, each describing a specific real-world event. A topic detail page contains a headline, brief summary, date, relevant subject labels, and a readable list of articles with outlet attribution and direct source links. Short article descriptions should add useful information. Prioritize reading and discovery; avoid sales copy, repeated explanations, comparison grids, and unnecessary controls.
 
-Readers can mark coverage useful and eventually contribute moderated credibility feedback. Game and outlet pages show coverage history; author profiles and deeper transparency features are longer-term possibilities.
+Use one representative image on the topic detail page, with source attribution, followed by a text-only article list. Avoid repeating similar artwork for every article within the same topic. Retain article thumbnail data and the reusable thumbnail component for feeds and other discovery pages, where images help distinguish different topics. Images remain optional; unavailable images should leave a readable text layout.
+
+The main feed presents event topics. Game pages and, as coverage grows, platform, company, and subject pages offer paths into the same topics. Following and personalization can come later. Comments are a future feature: one shared discussion belongs to a topic, regardless of how readers discover it. Topic pages remain accessible after leaving the latest feed; related updates can link to one another. Do not add empty comment sections or separate game discussions to the prototype.
+
+## Topic boundaries and site structure
+
+The sample game page shows a name, brief description, and newest-first topics using the same list layout as the main feed. Topic subject labels link to destination pages where they exist. Keep distinct events separate and older topics accessible through the game page; reuse their existing topic URLs and article collections.
+
+- A topic is a specific event such as a release delay, not an ongoing umbrella such as years of a game's development. A topic can start with one article; multiple outlets are not a publication requirement.
+- Group articles that help readers understand the same event. Time proximity is an important matching signal alongside the event itself; shared game names or publication dates alone are insufficient. Direct analysis and reactions may join the announcement's topic. A later distinct event, such as a second delay, gets its own topic.
+- Games → Topics → Articles is a useful browsing path, not a strict site-wide hierarchy. Topics can connect to games, platforms/storefronts (PC, Steam, Xbox), companies/studios (Nintendo, Microsoft, Bethesda), and cross-cutting subjects (layoffs, acquisitions, hardware).
+- A topic can appear on several relevant destination pages while retaining one identity, article collection, and future discussion. Add connections when followers would reasonably want the event, not for incidental mentions.
+- Begin with a simple news feed and game browsing. Expand navigation as coverage supports useful destination pages; avoid a large taxonomy menu or premature database abstractions.
+
+## Product references
+
+[Ground News](https://ground.news/) informs grouping coverage of the same event. Google's Full Coverage experience also informs collecting related articles around a story. Adapt these patterns to gaming news, with discovery and readable article lists taking priority over explicit source comparison. Political bias categories, visual design, and subscription models are not requirements.
+
+Google News and Apple News are secondary references for discovery, personalization, and reading experience. These references inform direction; the product's business model remains open.
 
 ## Product principles
 
-- Organize around games and news events, rather than a flat list of article links.
+- Organize discovery around specific news events and their relevant games or other subjects.
 - Show evidence and provenance. Keep credibility dimensions such as disclosure quality, correction history, and factual reliability separate and explainable; avoid a single opaque score.
 - Treat community feedback as a signal, not an established fact. Contentious credibility claims need evidence and moderation.
 - Distinguish reporting, analysis, opinion, rumor, reviews, and guides.
 - Make generated summaries and classifications identifiable and correctable.
 - Respect publishers through attribution, source links, metadata, and short excerpts. Full article reproduction requires permission.
-- Keep the experience approachable. The visual direction is a friendly doodled watchdog with binoculars, with readable comparison views and accessible interactions.
+- Keep the experience approachable. The visual direction is a friendly doodled watchdog with binoculars, readable news layouts, and accessible interactions. Keep branding restrained on reading pages.
 
 ## First useful version
 
 Start with three to five outlets and validate this loop:
 
-RSS/Atom ingestion → deduplicate articles → identify games and content type → group related coverage into events → publish indexable story pages → let readers compare sources and mark coverage useful/not useful.
+RSS/Atom ingestion → deduplicate articles → identify relevant subjects and content type → group related coverage into event topics → publish indexable topic pages → let readers discover topics and open original articles.
 
-Start with deterministic matching signals and allow human correction of story groupings. Introduce embeddings or LLM enrichment only when evaluation shows they improve results.
+The sample feed → game → topic → original article flow is established. This prototype uses clearly labeled sample data to settle the reading experience before adding database-backed features. Do not add ingestion, authentication, AI, or community features yet. Start eventual ingestion with deterministic matching signals and allow human correction of topic groupings. Introduce embeddings or LLM enrichment only when evaluation shows they improve results.
 
-Personalization, detailed ownership/disclosure records, correction histories, author profiles, reputation systems, and critic-versus-player comparisons can follow as the product develops. They are not prerequisites for the first useful comparison experience.
+Personalization, comments, usefulness feedback, detailed ownership/disclosure records, correction histories, author profiles, reputation systems, and critic-versus-player comparisons can follow as the product develops. They are not prerequisites for the first useful discovery experience.
 
 ## Architectural direction
 
-- **Web application:** TanStack Start, React, Vite, and TanStack Router. Public discovery and story pages should be indexable and server rendered where practical.
+- **Web application:** TanStack Start, React, Vite, and TanStack Router. Public discovery and topic pages should be indexable and server rendered where practical. Sample prototypes should be clearly labeled and excluded from indexing.
 - **Interactive data:** TanStack Query for shared server state, refreshes, and feedback interactions; route loaders for initial page data.
 - **UI:** Tailwind CSS and shadcn/ui.
-- **Database:** PostgreSQL on Supabase, accessed through server-side services using Drizzle ORM. The core model centers on games, outlets, articles, events, and article-event membership; user and transparency records grow with the features that need them.
+- **Database:** PostgreSQL on Supabase, accessed through server-side services using Drizzle ORM. The planned content model covers outlets, articles, event topics, article-topic membership, and relevant subject connections, including games. User, community, and transparency records grow with the features that need them.
 - **Authentication:** Supabase Auth is planned for accounts and user-specific features.
 - **Hosting and ingestion:** Cloudflare Workers via the official Vite plugin. Scheduled ingestion, enrichment, and clustering run separately from serving web requests, while sharing the domain model.
 - **Supporting tools:** Zod, environment validation where appropriate, and Biome. Supabase `pgvector` remains an option when semantic matching proves useful.
