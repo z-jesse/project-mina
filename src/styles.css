@@ -619,30 +619,29 @@ a {
 .feed-list > li {
   border-bottom: 1px solid var(--wd-line);
 }
-.feed-topic-link {
+.feed-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 176px;
   column-gap: 28px;
   padding-block: 28px;
-  text-decoration: none;
 }
-.feed-topic-link > :not(img) {
+.feed-card > :not(img) {
   grid-column: 1;
   margin: 0;
 }
-.feed-topic-link > img {
+.feed-card > img {
   grid-column: 2;
   grid-row: 1 / 5;
   align-self: center;
 }
-.feed-topic-link:not(:has(img)) {
+.feed-card:not(:has(img)) {
   grid-template-columns: minmax(0, 1fr);
 }
 .feed-subject {
   font-size: 12px;
   font-weight: 600;
 }
-.feed-topic-link h2 {
+.feed-card h2 {
   margin-block: 7px 8px;
   color: var(--wd-ink);
   font-size: 23px;
@@ -650,7 +649,10 @@ a {
   letter-spacing: -0.5px;
   line-height: 1.4;
 }
-.feed-topic-link:hover h2 {
+.feed-card h2 a {
+  text-decoration: none;
+}
+.feed-card a:hover {
   color: var(--wd-green);
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -660,13 +662,123 @@ a {
   font-size: 14px;
   line-height: 1.7;
 }
-.feed-topic-link .feed-meta {
+.feed-card .feed-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 16px;
   margin-top: 12px;
   color: var(--wd-muted);
   font-size: 12px;
+}
+.feed-card .feed-read-options {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  font-size: 12px;
+}
+.article-votes {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.article-votes button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 48px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--wd-line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--wd-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.article-votes button:hover,
+.article-votes button[aria-pressed='true'] {
+  border-color: var(--wd-green);
+  color: var(--wd-green);
+  background: #e8eee6;
+}
+.article-votes button[aria-pressed='true'] svg {
+  fill: currentColor;
+  fill-opacity: 0.18;
+}
+.article-votes button:focus-visible {
+  outline: 3px solid #a66a2f;
+  outline-offset: 3px;
+}
+.article-votes-note {
+  margin-left: 3px;
+  color: var(--wd-muted);
+  font-size: 11px;
+}
+.topic-article-list .article-votes {
+  margin-top: 14px;
+}
+.feed-read-options summary {
+  width: fit-content;
+  padding-block: 8px;
+  color: var(--wd-green);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.feed-read-options summary:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.feed-read-options summary:focus-visible {
+  outline: 3px solid #a66a2f;
+  outline-offset: 3px;
+}
+.feed-read-options ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.feed-read-options li {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-block: 12px;
+  border-top: 1px solid var(--wd-line);
+}
+.feed-read-options a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: var(--wd-green);
+  font-weight: 600;
+  text-decoration: none;
+  flex: 1;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 12px;
+}
+.feed-read-options .article-votes {
+  flex-shrink: 0;
+}
+.feed-read-options svg {
+  flex-shrink: 0;
+}
+.feed-read-outlet,
+.feed-read-title {
+  display: block;
+  line-height: 1.5;
+}
+.feed-read-title {
+  margin-top: 3px;
+  color: var(--wd-muted);
+  font-weight: 400;
 }
 .watchdog-footer {
   border-top: 1px solid var(--wd-line);
@@ -684,20 +796,25 @@ a {
   padding-block: 12px;
 }
 @media (max-width: 600px) {
-  .feed-topic-link {
+  .feed-read-options li {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .feed-card {
     grid-template-columns: minmax(0, 1fr) 104px;
     column-gap: 16px;
     padding-block: 24px;
   }
-  .feed-topic-link > img {
+  .feed-card > img {
     grid-row: 1 / 3;
     align-self: start;
   }
-  .feed-topic-link h2 {
+  .feed-card h2 {
     font-size: 19px;
   }
-  .feed-topic-link .feed-description,
-  .feed-topic-link .feed-meta {
+  .feed-card .feed-description,
+  .feed-card .feed-meta {
     grid-column: 1 / -1;
   }
   .topic-image img {

@@ -1,6 +1,8 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { ArrowLeft, ArrowUpRight } from 'lucide-react'
 import { useState } from 'react'
+import ArticleVotes from '../components/ArticleVotes'
+import PublicationTime from '../components/PublicationTime'
 import { getTopic } from '../server/topics.functions'
 
 export const Route = createFileRoute('/topics/$slug')({
@@ -113,7 +115,10 @@ function TopicPage() {
                 <article>
                   <div className="topic-article-meta">
                     <span className="topic-outlet">{article.outlet}</span>
-                    <time dateTime={article.date}>{article.dateLabel}</time>
+                    <PublicationTime
+                      date={article.date}
+                      dateLabel={article.dateLabel}
+                    />
                   </div>
                   <h3>
                     <a href={article.url}>
@@ -133,6 +138,7 @@ function TopicPage() {
                   {article.author && (
                     <p className="topic-article-author">By {article.author}</p>
                   )}
+                  <ArticleVotes url={article.url} title={article.title} />
                 </article>
               </li>
             ))}
