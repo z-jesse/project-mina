@@ -7,6 +7,11 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
+    "auth:start": "supabase start --network-id project-mina-local -x postgrest,postgres-meta,imgproxy,supavisor",
+    "auth:stop": "supabase stop",
+    "auth:status": "supabase status",
+    "test:auth-local": "tsx --test tests/local-auth.test.ts",
+    "test:auth-http": "node --test tests/auth-http.test.mjs",
     "generate-routes": "tsr generate",
     "build": "vite build",
     "preview": "vite preview",
@@ -25,6 +30,8 @@
     "test:import": "tsx --test tests/rss.test.ts"
   },
   "dependencies": {
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.117.2",
     "@t3-oss/env-core": "^0.13.10",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",
@@ -60,6 +67,8 @@
     "@vitejs/plugin-react": "^6.0.1",
     "dotenv": "^17.3.1",
     "rss-parser": "3.13.0",
+    "seroval": "1.6.7",
+    "supabase": "2.118.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",

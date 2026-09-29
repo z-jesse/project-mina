@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { ArrowLeft, ArrowUpRight } from 'lucide-react'
 import { useState } from 'react'
+import { ArticleFeedbackProvider } from '../components/ArticleFeedbackProvider'
 import ArticleVotes from '../components/ArticleVotes'
 import PublicationTime from '../components/PublicationTime'
 import SaveStoryButton from '../components/SaveStoryButton'
@@ -113,34 +114,40 @@ function TopicPage() {
               {outletCount} {outletCount === 1 ? 'outlet' : 'outlets'}
             </span>
           </div>
-          <ul className="topic-article-list">
-            {topic.articles.map((article) => (
-              <li key={article.url}>
-                <article>
-                  <div className="topic-article-meta">
-                    <span className="topic-outlet">{article.outlet}</span>
-                    <PublicationTime
-                      date={article.date}
-                      dateLabel={article.dateLabel}
-                    />
-                  </div>
-                  <h3>
-                    <a href={article.url}>
-                      {article.title}
-                      <ArrowUpRight size={18} aria-hidden="true" />
-                    </a>
-                  </h3>
-                  <p className="topic-article-description">
-                    {article.description}
-                  </p>
-                  {article.author && (
-                    <p className="topic-article-author">By {article.author}</p>
-                  )}
-                  <ArticleVotes url={article.url} title={article.title} />
-                </article>
-              </li>
-            ))}
-          </ul>
+          <ArticleFeedbackProvider
+            urls={topic.articles.map((article) => article.url)}
+          >
+            <ul className="topic-article-list">
+              {topic.articles.map((article) => (
+                <li key={article.url}>
+                  <article>
+                    <div className="topic-article-meta">
+                      <span className="topic-outlet">{article.outlet}</span>
+                      <PublicationTime
+                        date={article.date}
+                        dateLabel={article.dateLabel}
+                      />
+                    </div>
+                    <h3>
+                      <a href={article.url}>
+                        {article.title}
+                        <ArrowUpRight size={18} aria-hidden="true" />
+                      </a>
+                    </h3>
+                    <p className="topic-article-description">
+                      {article.description}
+                    </p>
+                    {article.author && (
+                      <p className="topic-article-author">
+                        By {article.author}
+                      </p>
+                    )}
+                    <ArticleVotes url={article.url} title={article.title} />
+                  </article>
+                </li>
+              ))}
+            </ul>
+          </ArticleFeedbackProvider>
         </section>
       </div>
     </main>

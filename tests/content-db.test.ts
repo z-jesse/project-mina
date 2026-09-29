@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { config } from 'dotenv'
 import { eq, inArray, sql } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
-import { seedContent } from '../scripts/seed-content'
 import {
   inbox,
   saveDraft,
@@ -11,15 +11,16 @@ import {
   updateCoverage,
 } from '../scripts/editorial'
 import { importNews, parseNewsFeed, pcgamer, vgc } from '../scripts/rss'
-import { pcGamerFeed, testFeed, vgcFeed } from './fixtures/rss'
+import { seedContent } from '../scripts/seed-content'
 import { sampleTopics } from '../src/data/sample-topics'
 import { withDatabase } from '../src/db/client.server'
 import {
   articles,
+  articleVotes,
   subjects,
   topicArticles,
-  topics,
   topicSubjects,
+  topics,
 } from '../src/db/content-schema'
 import {
   findSavedTopics,
@@ -27,6 +28,8 @@ import {
   getGtaGame,
   listTopics,
 } from '../src/server/topics.server'
+import { readArticleVotes, writeArticleVote } from '../src/server/votes.server'
+import { pcGamerFeed, testFeed, vgcFeed } from './fixtures/rss'
 
 config({ path: ['.env.local', '.env'], quiet: true })
 
@@ -576,6 +579,77 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
   )
 
   await t.test(
+    'article votes are idempotent, isolated by account, and limited to published coverage',
+    async () => {
+      const firstUser = randomUUID()
+      const secondUser = randomUUID()
+      const url = sampleTopics[0].articles[0].url
+      const baseline = (await readArticleVotes([url], null))[0]
+      assert.ok(baseline)
+      try {
+        await Promise.all(
+          Array.from({ length: 4 }, () => writeArticleVote(url, firstUser, 1)),
+        )
+        await writeArticleVote(url, secondUser, -1)
+        let [votes] = await readArticleVotes([url], firstUser)
+        assert.equal(votes.helpful, baseline.helpful + 1)
+        assert.equal(votes.unhelpful, baseline.unhelpful + 1)
+        assert.equal(votes.ownVote, 1)
+        assert.equal((await readArticleVotes([url], secondUser))[0].ownVote, -1)
+        assert.equal((await readArticleVotes([url], null))[0].ownVote, null)
+        await writeArticleVote(url, firstUser, -1)
+        await writeArticleVote(url, firstUser, null)
+        await writeArticleVote(url, firstUser, null)
+        ;[votes] = await readArticleVotes([url], firstUser)
+        assert.equal(votes.helpful, baseline.helpful)
+        assert.equal(votes.unhelpful, baseline.unhelpful + 1)
+        assert.equal(votes.ownVote, null)
+        assert.equal((await readArticleVotes([url], secondUser))[0].ownVote, -1)
+        await withDatabase(async (db) => {
+          const [existing] = await db
+            .select()
+            .from(articles)
+            .where(eq(articles.url, url))
+          const [unpublished] = await db
+            .insert(articles)
+            .values({
+              outletId: existing.outletId,
+              url: `https://example.com/unpublished-${randomUUID()}`,
+              title: 'Private inbox article',
+              publishedDate: '2026-09-28',
+              description: '',
+            })
+            .returning()
+          try {
+            assert.ok(
+              (await writeArticleVote(unpublished.url, firstUser, 1)).error,
+            )
+            assert.deepEqual(
+              await readArticleVotes([unpublished.url], firstUser),
+              [],
+            )
+            await assert.rejects(
+              db.insert(articleVotes).values({
+                articleId: existing.id,
+                userId: firstUser,
+                value: 2,
+              }),
+            )
+          } finally {
+            await db.delete(articles).where(eq(articles.id, unpublished.id))
+          }
+        })
+      } finally {
+        await withDatabase((db) =>
+          db
+            .delete(articleVotes)
+            .where(inArray(articleVotes.userId, [firstUser, secondUser])),
+        )
+      }
+    },
+  )
+
+  await t.test(
     'RLS denies public-role reads and writes even when table grants exist',
     async () => {
       await withDatabase(async (db) => {
@@ -585,9 +659,9 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
         }>(sql`
         select relname, relrowsecurity from pg_class
         where oid in ('articles'::regclass, 'outlets'::regclass, 'subjects'::regclass,
-          'topics'::regclass, 'topic_articles'::regclass, 'topic_subjects'::regclass)
+          'topics'::regclass, 'topic_articles'::regclass, 'topic_subjects'::regclass, 'article_votes'::regclass)
       `)
-        assert.equal(result.rows.length, 6)
+        assert.equal(result.rows.length, 7)
         assert.ok(result.rows.every((row) => row.relrowsecurity))
         await db.execute(sql`do $$ begin
         if not exists (select 1 from pg_roles where rolname = 'mina_test_reader') then
@@ -605,7 +679,20 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
           await tx.execute(sql`set local role mina_test_reader`)
           assert.equal((await tx.select().from(topics)).length, 0)
           assert.equal((await tx.select().from(articles)).length, 0)
+          assert.equal((await tx.select().from(articleVotes)).length, 0)
         })
+        const [article] = await db
+          .select({ id: articles.id })
+          .from(articles)
+          .limit(1)
+        await assert.rejects(
+          db.transaction(async (tx) => {
+            await tx.execute(sql`set local role mina_test_reader`)
+            await tx
+              .insert(articleVotes)
+              .values({ articleId: article.id, userId: randomUUID(), value: 1 })
+          }),
+        )
         await assert.rejects(
           db.transaction(async (tx) => {
             await tx.execute(sql`set local role mina_test_reader`)

@@ -2,7 +2,10 @@
 
 The current milestone serves the same historical preview from either fixtures or
 PostgreSQL. A local [RSS import and manual topic review workflow](ingestion.md)
-now adds real coverage. There are no accounts or public write endpoints.
+now adds real coverage. Email-code accounts and authenticated article voting are
+implemented; editorial writes still use the local CLI review workflow.
+The [local Auth development stack](auth.md) runs separately in Docker; its managed
+database does not replace this content database.
 
 ## Daily local development
 
@@ -65,6 +68,9 @@ aborts the seed. It does not delete/reset any data.
   flag, optional representative image and announcement link.
 - `subjects`: game, company, platform, storefront, or cross-cutting subject.
 - `topic_articles` and `topic_subjects`: ordered many-to-many memberships.
+- `article_votes`: one helpful/unhelpful choice per article and verified Auth user
+  UUID. Article deletion cascades to votes; Auth account deletion needs a separate
+  cleanup workflow because Auth runs in a different database locally.
 
 Date-only fixtures remain PostgreSQL `date` values. Imported articles also retain
 the feed's exact publication timestamp, feed URL/GUID, and import time. Their
@@ -90,13 +96,17 @@ are read during a server call, never exposed through `VITE_` variables. Each
 request closes its database client; Supabase's pooler handles shared connections.
 We do not keep sockets in a cross-request global on Cloudflare Workers.
 
-All six content tables have RLS enabled with **no public policies**. Browser
+All seven content tables have RLS enabled with **no public policies**. Browser
 `anon`/`authenticated` access is denied even if Supabase grants table access.
 The initial server connection uses database-owner credentials (local or Supabase),
 which bypass RLS; the server queries explicitly filter published topics.
 Do not treat RLS as protection against a bug in those owner-level queries. Before
 a public launch, provision a restricted runtime database role, leaving migration
-credentials separate. No database write server functions are exposed here.
+credentials separate. The vote server function checks the request origin,
+verifies the account with Supabase Auth, and writes only that account's vote on
+published coverage. It never accepts a user ID from the browser. RLS continues
+to deny direct Data API access; the owner-level server connection means these
+handler checks are the current authorization boundary.
 
 For deployment, set runtime `DATABASE_URL` as a Cloudflare secret and
 `CONTENT_SOURCE` as a Worker variable. Do not upload migration credentials.

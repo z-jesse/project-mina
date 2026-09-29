@@ -359,6 +359,30 @@ a {
   background: var(--wd-paper);
   color-scheme: light;
 }
+.watchdog-account { display: flex; align-items: center; gap: 12px; font-size: 13px; flex-wrap: wrap; }
+.watchdog-account a, .watchdog-account button { white-space: nowrap; font-weight: 600; }
+.account-email { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--wd-muted); }
+.account-error, .vote-error { color: #923c2a; font-size: 13px; }
+.vote-error { display: block; max-width: 230px; margin-top: 6px; }
+.vote-error button { text-decoration: underline; }
+.article-feedback { flex-shrink: 0; }
+.article-votes:disabled { opacity: .55; }
+.auth-panel { max-width: 480px; padding-block: 56px 80px; }
+.auth-panel h1 { font-size: 30px; line-height: 1.2; margin-bottom: 20px; }
+.auth-panel p { margin-block: 16px; line-height: 1.6; }
+.auth-panel form { display: grid; gap: 12px; margin-block: 24px; }
+.auth-panel label { font-size: 14px; font-weight: 600; }
+.auth-panel input { width: 100%; border: 1px solid var(--wd-line); border-radius: 8px; padding: 12px; background: white; font-size: 16px; }
+.auth-panel button[type="submit"] { padding: 12px 18px; border-radius: 8px; background: var(--wd-green, #294f43); color: white; font-weight: 600; }
+.auth-panel button:disabled, .watchdog-account button:disabled { opacity: .6; cursor: wait; }
+.auth-panel > a { display: inline-block; margin-top: 20px; text-decoration: underline; }
+.auth-actions { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; }
+.auth-actions button { text-decoration: underline; }
+.auth-panel button:focus-visible, .auth-panel input:focus-visible,
+.watchdog-account button:focus-visible, .vote-error button:focus-visible {
+  outline: 3px solid #a66a2f;
+  outline-offset: 3px;
+}
 .watchdog-wrap {
   width: min(1080px, calc(100% - 48px));
   margin-inline: auto;
@@ -952,6 +976,11 @@ output.discovery-empty { display: block; }
 .watchdog-footer a {
   padding-block: 12px;
 }
+@media (min-width: 601px) and (max-width: 900px) {
+  .watchdog-nav { flex-wrap: wrap; gap: 18px; padding-block: 18px; }
+  .watchdog-search-region { width: 100%; order: 3; }
+  .watchdog-account { margin-left: auto; }
+}
 @media (max-width: 600px) {
   .feed-read-options li {
     flex-direction: column;
@@ -987,7 +1016,9 @@ output.discovery-empty { display: block; }
     gap: 16px;
     padding-block: 18px;
   }
-  .watchdog-search-region { width: 100%; }
+  .watchdog-search-region { width: 100%; order: 3; }
+  .watchdog-account { margin-left: auto; }
+  .account-email { display: none; }
   .watchdog-search input { font-size: 16px; }
   .watchdog-primary { gap: 23px; }
   .watchdog-primary > a { font-size: 12px; gap: 6px; }

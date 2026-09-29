@@ -137,18 +137,19 @@ cost, review effort, and publication delay must be measured, not assumed.
   cannot be removed; duplicate operations are no-ops.
 - Feed ordering by event date, then topic ID; no recommendation engine or
   meaningful-update ranking. Precise article timestamps exist for RSS imports.
-- Browser-local votes with separate zero/one counts and persistence where storage
-  is available. Tooltips and accessible text explain the local behavior; repeated
-  preview and RSS-description labels are omitted from article cards. Outlet
-  attribution and source links remain. No community totals or server writes.
+- Email-code accounts and persistent article votes in database mode, with separate
+  helpful/unhelpful totals. Each reader can select, switch, or remove one choice;
+  signed-out readers can see totals and are prompted to sign in to vote. Sample
+  mode retains labeled browser-local feedback. Existing local choices are not
+  migrated into community totals. Votes do not affect ranking.
 - Compact topic cards on the main feed and game page. All primary headlines open
-  topics. A single expandable article count exposes source links and local votes
+  topics. A single expandable article count exposes source links and article votes
   for one or many articles, in existing editorial order without a featured-source
   recommendation.
 - Cards show the event date consistently; precise relative article publication
   times remain on topic pages. No fabricated topic publication times.
 
-The existing TanStack Start, PostgreSQL/Supabase, Drizzle, and planned Supabase
+The existing TanStack Start, PostgreSQL/Supabase, Drizzle, and Supabase
 Auth direction still fits. This discussion does not call for another database,
 a monorepo, new infrastructure, or immediate community tables.
 
@@ -164,8 +165,9 @@ a monorepo, new infrastructure, or immediate community tables.
    [The grouping review](grouping-review.md) records same-event matches,
    same-game and same-anniversary non-matches, interview framing, and delayed reporting; it is a starting set, not a
    validated automatic matching policy.
-3. **Implement a narrow community slice.** Accounts and persistent article votes,
-   then shared topic discussion with article references. Scope moderation and
+3. **Validate the narrow community slice.** Accounts and persistent article votes
+   are implemented locally. Review sign-in and feedback before adding shared topic
+   discussion with article references. Scope moderation and
    correction behavior with these features rather than adding a reputation score.
 
 Open decisions include how to choose a multi-source quick-read article, how much

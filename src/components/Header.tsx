@@ -5,6 +5,7 @@ import {
   useSearch,
 } from '@tanstack/react-router'
 import { Bookmark, House, Search, Sparkles } from 'lucide-react'
+import AccountLink from './AccountLink'
 
 export default function Header() {
   const navigate = useNavigate()
@@ -78,6 +79,7 @@ export default function Header() {
             <button type="submit">Search</button>
           </form>
         </search>
+        <AccountLink />
       </div>
       <nav
         className="watchdog-wrap watchdog-primary"

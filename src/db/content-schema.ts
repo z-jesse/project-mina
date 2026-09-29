@@ -13,6 +13,7 @@ import {
   timestamp,
   unique,
   uniqueIndex,
+  uuid,
 } from 'drizzle-orm/pg-core'
 import type { Topic } from '../lib/content'
 
@@ -150,5 +151,26 @@ export const topicSubjects = pgTable(
     unique('topic_subjects_position_unique').on(table.topicId, table.position),
     index('topic_subjects_subject_idx').on(table.subjectId, table.topicId),
     check('topic_subjects_position_nonnegative', sql`${table.position} >= 0`),
+  ],
+).enableRLS()
+
+// Auth is a separate service locally. Only the server's verified Auth user ID
+// enters this table; there is deliberately no cross-database auth.users FK.
+export const articleVotes = pgTable(
+  'article_votes',
+  {
+    articleId: integer('article_id')
+      .notNull()
+      .references(() => articles.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').notNull(),
+    value: integer().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.articleId, table.userId] }),
+    index('article_votes_user_idx').on(table.userId),
+    check('article_votes_value_check', sql`${table.value} in (-1, 1)`),
   ],
 ).enableRLS()
