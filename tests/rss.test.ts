@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { articleUrl, parseNewsFeed, pcgamer } from '../scripts/rss'
+import { articleUrl, parseNewsFeed, pcgamer, vgc } from '../scripts/rss'
 
-import { pcGamerFeed, testFeed } from './fixtures/rss'
+import { pcGamerFeed, testFeed, vgcFeed } from './fixtures/rss'
 
 test('RSS preserves metadata and UTC timestamp, strips markup, and only keeps the description', async () => {
   const { items, skipped } = await parseNewsFeed(testFeed)
@@ -133,4 +133,71 @@ test('PC Gamer accepts its larger feed but still bounds response size', async ()
   assert.ok(JSON.stringify(feed).length < 2000)
   await assert.rejects(parseNewsFeed(largerFeed))
   await assert.rejects(parseNewsFeed('x'.repeat(2_000_001), pcgamer))
+})
+
+test('VGC reads the description image while retaining only plain-text metadata', async () => {
+  const feed = await parseNewsFeed(vgcFeed, vgc)
+  assert.equal(feed.source.slug, 'vgc')
+  assert.equal(feed.skipped, 0)
+  assert.equal(
+    feed.items[0].url,
+    'https://www.videogameschronicle.com/mina-test-announcement',
+  )
+  assert.equal(
+    feed.items[0].imageUrl,
+    'https://images.example.com/vgc.jpg?width=800&quality=80',
+  )
+  assert.equal(
+    feed.items[0].description,
+    'A short publisher description & details.',
+  )
+  assert.equal(feed.items[0].author, 'Test Reporter')
+  assert.equal(
+    feed.items[0].publishedAt.toISOString(),
+    '2026-09-25T08:30:00.000Z',
+  )
+  assert.ok(!JSON.stringify(feed).includes('Full article body'))
+  assert.equal(
+    articleUrl('https://videogameschronicle.com/news/story/?utm_source=rss'),
+    'https://www.videogameschronicle.com/news/story/',
+  )
+  assert.equal((await parseNewsFeed(vgcFeed)).skipped, 1)
+  assert.equal((await parseNewsFeed(testFeed, vgc)).skipped, 1)
+  assert.equal(
+    (
+      await parseNewsFeed(
+        vgcFeed.replaceAll(
+          'www.videogameschronicle.com',
+          'www.videogameschronicle.com.evil.example',
+        ),
+        vgc,
+      )
+    ).skipped,
+    1,
+  )
+})
+
+test('VGC rejects unsafe description images and tolerates missing thumbnails', async () => {
+  for (const replacement of [
+    '',
+    '<img src="javascript:alert(1)">',
+    '<img src="http://images.example.com/test.jpg">',
+    '<img src="https://user:password@images.example.com/test.jpg">',
+    '<img data-src="https://images.example.com/test.jpg">',
+  ]) {
+    const feed = await parseNewsFeed(
+      vgcFeed.replace(/<img[^>]*>/, replacement),
+      vgc,
+    )
+    assert.equal(feed.items.length, 1)
+    assert.equal(feed.items[0].imageUrl, undefined)
+  }
+  const singleQuoted = vgcFeed.replace(
+    /<img[^>]*>/,
+    "<img src='https://images.example.com/single.jpg'>",
+  )
+  assert.equal(
+    (await parseNewsFeed(singleQuoted, vgc)).items[0].imageUrl,
+    'https://images.example.com/single.jpg',
+  )
 })

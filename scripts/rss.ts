@@ -17,7 +17,14 @@ export const pcgamer = {
   feedUrl: 'https://www.pcgamer.com/rss/',
   maxBytes: 2_000_000,
 }
-export const newsSources = [eurogamer, pcgamer]
+export const vgc = {
+  slug: 'vgc',
+  name: 'VGC',
+  siteUrl: 'https://www.videogameschronicle.com',
+  feedUrl: 'https://www.videogameschronicle.com/category/news/feed/',
+  maxBytes: 1_000_000,
+}
+export const newsSources = [eurogamer, pcgamer, vgc]
 type NewsSource = (typeof newsSources)[number]
 const parser = new Parser<
   Record<string, never>,
@@ -105,6 +112,12 @@ export async function parseNewsFeed(xml: string, source = eurogamer) {
         /\s*Read more\s*$/i,
         '',
       )
+      // VGC's news feed supplies a quoted img src in its short description.
+      // Read only that URL; never render or store the description's HTML.
+      const descriptionImage =
+        source.slug === vgc.slug
+          ? item.content?.match(/<img\b[^>]*?\ssrc\s*=\s*(["'])(.*?)\1/i)?.[2]
+          : undefined
       items.push({
         url: articleUrl(item.link ?? '', source),
         title,
@@ -125,7 +138,8 @@ export async function parseNewsFeed(xml: string, source = eurogamer) {
           )?.$?.url ??
             (item.enclosure?.type?.startsWith('image/')
               ? item.enclosure.url
-              : undefined),
+              : undefined) ??
+            descriptionImage?.replaceAll('&amp;', '&'),
         ),
         feedGuid: item.guid?.trim().slice(0, 2048) || undefined,
       })

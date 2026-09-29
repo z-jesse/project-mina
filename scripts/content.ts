@@ -14,7 +14,7 @@ import { eurogamer, fetchNewsFeed, importNews, newsSources } from './rss'
 config({ path: ['.env.local', '.env'], quiet: true })
 const [command, value, ...extra] = process.argv.slice(2)
 const usage =
-  'Usage: npm run content -- import [eurogamer|pc-gamer] | inbox [eurogamer|pc-gamer] | draft <json-file> | publish <slug> | unpublish <slug> | attach <slug> <article-url> <kind> | detach <slug> <article-url>'
+  'Usage: npm run content -- import [eurogamer|pc-gamer|vgc] | inbox [eurogamer|pc-gamer|vgc] | draft <json-file> | publish <slug> | unpublish <slug> | attach <slug> <article-url> <kind> | detach <slug> <article-url>'
 
 try {
   if (

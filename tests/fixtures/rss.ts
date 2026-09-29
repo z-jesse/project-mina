@@ -11,3 +11,11 @@ export const testFeed = `<?xml version="1.0"?>
 export const pcGamerFeed = testFeed
   .replaceAll('www.eurogamer.net', 'www.pcgamer.com')
   .replace('medium="image"', 'type="image/jpeg"')
+
+export const vgcFeed = testFeed
+  .replaceAll('www.eurogamer.net', 'www.videogameschronicle.com')
+  .replace(/<media:content[^>]+\/>/, '')
+  .replace(
+    '<p>A short',
+    '<img src="https://images.example.com/vgc.jpg?width=800&amp;quality=80"><p>A short',
+  )

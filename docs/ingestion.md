@@ -1,26 +1,33 @@
 # Local RSS import and topic review
 
-This milestone imports [Eurogamer's news RSS feed](https://www.eurogamer.net/feed/news)
-and [PC Gamer's RSS feed](https://www.pcgamer.com/rss/) into local PostgreSQL.
+This milestone imports [Eurogamer's news RSS feed](https://www.eurogamer.net/feed/news),
+[PC Gamer's RSS feed](https://www.pcgamer.com/rss/), and
+[VGC's news RSS feed](https://www.videogameschronicle.com/category/news/feed/)
+into local PostgreSQL.
 Start the database and apply migrations using
 [the database guide](database.md), then run:
 
 ```sh
 npm run content -- import
 npm run content -- import pc-gamer
+npm run content -- import vgc
 npm run content -- inbox
 npm run content -- inbox eurogamer
 npm run content -- inbox pc-gamer
+npm run content -- inbox vgc
 ```
 
 `import` defaults to Eurogamer; each command fetches only the selected outlet.
 The importer reads at most 100 entries from one feed request, with a 20-second
-timeout and a response limit of 1 MB for Eurogamer or 2 MB for PC Gamer. PC Gamer's
+timeout and a response limit of 1 MB for Eurogamer/VGC or 2 MB for PC Gamer. PC Gamer's
 feed includes full bodies, so it needs the larger bounded response allowance;
 those bodies are discarded. The importer stores headlines, links, authors, publication
 timestamps, short plain-text descriptions, and optional image URLs. It does not
 fetch article pages or store full article bodies. Descriptions are publisher
 excerpts, capped at 320 characters, and are attributed on the topic page.
+VGC supplies thumbnails inside its short RSS description. The parser reads the
+quoted image URL as a fallback and keeps only the plain-text description; it
+never renders the feed's HTML. Missing or unsafe image URLs are omitted.
 
 Article URLs lose tracking parameters and fragments. Unique URL and outlet/GUID
 constraints prevent duplicates on repeated imports. Existing article metadata and
@@ -82,17 +89,21 @@ published using the commands below.
 The example requires its article to have been imported; it may eventually roll
 out of the publisher's current feed. Existing imports remain available locally.
 
-Two multi-outlet examples and their match/non-match reasoning are recorded in
-[the grouping review](grouping-review.md). After importing both feeds:
+Multi-outlet examples and their match/non-match reasoning are recorded in
+[the grouping review](grouping-review.md). After importing all three feeds:
 
 ```sh
 npm run content -- draft docs/examples/minecraft-sift-topic.json
 npm run content -- publish minecraft-sift-dimension-announced
 npm run content -- draft docs/examples/gears-story-director-topic.json
 npm run content -- publish gears-e-day-story-director-layoff
+npm run content -- draft docs/examples/nadella-xbox-streamlining-topic.json
+npm run content -- publish nadella-xbox-streamlining-comments
 ```
 
 These examples also require their original articles to remain available locally.
+VGC's news feed contained only ten recent entries at review time; older examples
+can roll out quickly. Keep previously imported articles for repeatable review.
 PC Gamer's feed mixes news with opinions, guides, and other content; importing an
 entry does not establish its kind or make it eligible for publication.
 
@@ -101,6 +112,7 @@ entry does not establish its kind or make it eligible for publication.
 Review the imported article, then attach it to the existing event:
 
 ```sh
+npm run content -- attach minecraft-sift-dimension-announced "https://www.videogameschronicle.com/news/minecraft-is-officially-getting-its-first-new-dimension-in-15-years/" reporting
 npm run content -- attach gears-e-day-story-director-layoff "https://www.pcgamer.com/games/third-person-shooter/gears-of-war-story-director-laid-off-mere-days-after-e-day-went-gold/" reporting
 ```
 

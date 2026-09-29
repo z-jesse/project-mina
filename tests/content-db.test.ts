@@ -10,8 +10,8 @@ import {
   setPublication,
   updateCoverage,
 } from '../scripts/editorial'
-import { importNews, parseNewsFeed, pcgamer } from '../scripts/rss'
-import { pcGamerFeed, testFeed } from './fixtures/rss'
+import { importNews, parseNewsFeed, pcgamer, vgc } from '../scripts/rss'
+import { pcGamerFeed, testFeed, vgcFeed } from './fixtures/rss'
 import { sampleTopics } from '../src/data/sample-topics'
 import { withDatabase } from '../src/db/client.server'
 import {
@@ -479,6 +479,41 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
         } finally {
           await db.delete(topics).where(eq(topics.slug, topicSlug))
           await db.delete(articles).where(inArray(articles.url, urls))
+        }
+      })
+    },
+  )
+
+  await t.test(
+    'VGC imports reuse the seeded outlet without changing historical topics',
+    async () => {
+      await withDatabase(async (db) => {
+        const before = await listTopics()
+        const feed = await parseNewsFeed(vgcFeed, vgc)
+        try {
+          assert.deepEqual(await importNews(db, feed), {
+            inserted: 1,
+            duplicates: 0,
+            skipped: 0,
+          })
+          assert.deepEqual(await importNews(db, feed), {
+            inserted: 0,
+            duplicates: 1,
+            skipped: 0,
+          })
+          const pending = await inbox(db, 'vgc')
+          assert.equal(pending.length, 1)
+          assert.equal(pending[0].outlet, 'VGC')
+          const [stored] = await db
+            .select()
+            .from(articles)
+            .where(eq(articles.url, feed.items[0].url))
+          assert.equal(stored.feedUrl, vgc.feedUrl)
+          assert.equal(stored.imageUrl, feed.items[0].imageUrl)
+          assert.equal(stored.kind, null)
+          assert.deepEqual(await listTopics(), before)
+        } finally {
+          await db.delete(articles).where(eq(articles.url, feed.items[0].url))
         }
       })
     },

@@ -1,0 +1,27 @@
+{
+  "slug": "nadella-xbox-streamlining-comments",
+  "title": "Satya Nadella praises Xbox restructuring in podcast interview",
+  "eventDate": "2026-09-26",
+  "description": "Microsoft's CEO discussed Xbox's restructuring and plans for growth on the Sources podcast, following recent job cuts.",
+  "summary": "VGC, Eurogamer and PC Gamer cover the same Sources podcast interview with Satya Nadella. He expressed confidence in Xbox's studios and games, supported the team's restructuring, and discussed finding a sustainable business model. The coverage places those remarks in the context of recent layoffs. This topic concerns the interview remarks, rather than a new round of cuts.",
+  "summaryIsAi": true,
+  "subjects": [
+    { "slug": "microsoft", "name": "Microsoft", "kind": "company" },
+    { "slug": "xbox", "name": "Xbox", "kind": "platform" },
+    { "slug": "layoffs", "name": "Layoffs", "kind": "subject" }
+  ],
+  "articles": [
+    {
+      "url": "https://www.videogameschronicle.com/news/microsoft-ceo-says-streamlining-of-xbox-business-is-great-to-see/",
+      "kind": "reporting"
+    },
+    {
+      "url": "https://www.pcgamer.com/gaming-industry/microsoft-ceo-says-xboxs-streamlining-process-is-great-to-see-following-its-most-recent-round-of-layoffs/",
+      "kind": "analysis"
+    },
+    {
+      "url": "https://www.eurogamer.net/satya-nadella-xbox-streamlining-great-to-see-layoffs",
+      "kind": "reporting"
+    }
+  ]
+}
