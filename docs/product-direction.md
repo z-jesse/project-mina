@@ -39,6 +39,10 @@ experience wholesale or assume we know their internal grouping systems.
   every article in the default collapsed feed.
 - Retain one representative topic image and a text-only article list. Article
   thumbnail metadata remains useful for discovery. Missing images are acceptable.
+  Persist the first available attached image in import order and retain its
+  attribution. Fill image-free topics when coverage supplies an image, but do not
+  replace an existing choice due to article order or an older publication date.
+  Explicit editorial replacement is available through the draft workflow.
 - Recent article times use elapsed minutes, hours, or days, with exact dates
   available. Do not turn a date-only event record into an invented timestamp.
 
@@ -118,7 +122,10 @@ cost, review effort, and publication delay must be measured, not assumed.
 - Two-outlet local RSS import (Eurogamer and PC Gamer), metadata deduplication, and explicit CLI topic
   drafting/publication. Imports alone do not create topics or publish articles.
 - Required editorial headline, description, and summary in the draft workflow.
-  Published edits currently require unpublishing; there is no revision history.
+  Published editorial edits require unpublishing; there is no revision history.
+  Imported articles can be attached or detached while the topic stays published,
+  preserving its identity, image, event date, and feed position. The last article
+  cannot be removed; duplicate operations are no-ops.
 - Feed ordering by event date, then topic ID; no recommendation engine or
   meaningful-update ranking. Precise article timestamps exist for RSS imports.
 - Browser-local votes with separate zero/one counts and persistence where storage

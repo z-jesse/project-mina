@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull, notExists, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, notExists, sql } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { z } from 'zod'
 import * as schema from '../src/db/schema'
@@ -18,6 +18,10 @@ export const draftInput = z
     description: z.string().trim().min(1).max(320),
     summary: z.string().trim().min(1).max(2000),
     summaryIsAi: z.boolean(),
+    imageArticleUrl: z
+      .string()
+      .transform((value) => articleUrl(value))
+      .optional(),
     subjects: z
       .array(
         z
@@ -122,12 +126,41 @@ export async function saveDraft(
       throw new EditorialError(
         'Import every selected article before creating the draft.',
       )
+    // Persist the first available image by import order, independently of
+    // publication time or display order. Later coverage does not replace it.
+    let image = existing?.image ?? null
+    if (data.imageArticleUrl || !image) {
+      const source = data.imageArticleUrl
+        ? selected.find((article) => article.url === data.imageArticleUrl)
+        : [...selected]
+            .sort(
+              (a, b) =>
+                (a.importedAt?.getTime() ?? 0) -
+                  (b.importedAt?.getTime() ?? 0) || a.id - b.id,
+            )
+            .find((article) => article.imageUrl)
+      if (data.imageArticleUrl && !source?.imageUrl)
+        throw new EditorialError('Choose an attached article with an image.')
+      if (source?.imageUrl) {
+        const [outlet] = await tx
+          .select()
+          .from(schema.outlets)
+          .where(eq(schema.outlets.id, source.outletId))
+        image = {
+          src: source.imageUrl,
+          alt: '',
+          sourceName: outlet.name,
+          sourceUrl: source.url,
+        }
+      }
+    }
     const values = {
       title: data.title,
       eventDate: data.eventDate,
       description: data.description,
       summary: data.summary,
       summaryIsAi: data.summaryIsAi,
+      image,
     }
     const topic =
       existing ??
@@ -172,6 +205,114 @@ export async function saveDraft(
         .values({ topicId: topic.id, subjectId: saved.id, position })
     }
     return { slug: data.slug, status: 'draft' }
+  })
+}
+
+const coverageInput = z.discriminatedUnion('action', [
+  z
+    .object({
+      action: z.literal('attach'),
+      slug,
+      url: z.string().transform((value) => articleUrl(value)),
+      kind: z.enum(schema.articleKind.enumValues),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal('detach'),
+      slug,
+      url: z.string().transform((value) => articleUrl(value)),
+    })
+    .strict(),
+])
+
+export async function updateCoverage(
+  db: NodePgDatabase<typeof schema>,
+  input: unknown,
+) {
+  const data = coverageInput.parse(input)
+  return db.transaction(async (tx) => {
+    // All editorial writes lock the topic, including concurrent coverage edits.
+    const [topic] = await tx
+      .select()
+      .from(schema.topics)
+      .where(eq(schema.topics.slug, data.slug))
+      .for('update')
+    if (!topic || topic.isSample)
+      throw new EditorialError('Non-sample topic not found.')
+    const [article] = await tx
+      .select()
+      .from(schema.articles)
+      .where(eq(schema.articles.url, data.url))
+      .for('update')
+    if (!article?.importedAt)
+      throw new EditorialError('Import the article before changing coverage.')
+    const members = await tx
+      .select()
+      .from(schema.topicArticles)
+      .where(eq(schema.topicArticles.topicId, topic.id))
+      .orderBy(asc(schema.topicArticles.position))
+    const attached = members.some((member) => member.articleId === article.id)
+    const result = { slug: topic.slug, status: topic.status, changed: false }
+
+    if (data.action === 'detach') {
+      if (!attached) return result
+      if (members.length === 1)
+        throw new EditorialError(
+          'Keep at least one article attached to the topic.',
+        )
+      await tx
+        .delete(schema.topicArticles)
+        .where(
+          and(
+            eq(schema.topicArticles.topicId, topic.id),
+            eq(schema.topicArticles.articleId, article.id),
+          ),
+        )
+      // Keep the saved image and its attribution; replacement is an explicit edit.
+      return {
+        ...result,
+        changed: true,
+        imageSourceDetached: topic.image?.sourceUrl === article.url,
+      }
+    }
+
+    if (attached) return result
+    if (members.length >= 20)
+      throw new EditorialError(
+        'This review workflow supports up to 20 articles per topic.',
+      )
+    if (article.kind && article.kind !== data.kind)
+      throw new EditorialError(
+        'Article already has a different reviewed content kind.',
+      )
+    await tx
+      .update(schema.articles)
+      .set({ kind: data.kind })
+      .where(eq(schema.articles.id, article.id))
+    await tx.insert(schema.topicArticles).values({
+      topicId: topic.id,
+      articleId: article.id,
+      position: (members.at(-1)?.position ?? -1) + 1,
+    })
+    if (!topic.image && article.imageUrl) {
+      const [outlet] = await tx
+        .select()
+        .from(schema.outlets)
+        .where(eq(schema.outlets.id, article.outletId))
+      await tx
+        .update(schema.topics)
+        .set({
+          image: {
+            src: article.imageUrl,
+            alt: '',
+            sourceName: outlet.name,
+            sourceUrl: article.url,
+          },
+        })
+        .where(eq(schema.topics.id, topic.id))
+    }
+    return { ...result, changed: true }
   })
 }
 

@@ -52,6 +52,19 @@ article order and subject membership. It requires previously imported articles
 and refuses to overwrite historical samples or published topics. Subject slugs
 with conflicting names/kinds are rejected rather than silently changed.
 
+Drafting also saves the first available image among attached articles, using import
+time and then article ID to resolve the initial choice. It keeps that image on
+subsequent saves, even if articles are reordered or older coverage arrives later.
+A topic without an image picks one up on a later save when an attached article has
+one. The feed and topic page share this persisted image; its caption links to the
+supplying article. No image download, scoring, or AI selection is performed.
+
+To deliberately replace a broken or unsuitable image, add `imageArticleUrl` to
+the draft JSON, pointing to an attached article that has an image. Omit this
+field on ordinary saves to preserve the existing choice. Imported images have
+no invented dimensions or visual descriptions; the existing responsive image
+layout provides the display size.
+
 Publishing is a separate, deliberate review step. In database mode the feed and
 topic URL then show the topic. Historical samples retain their labels, publisher
 descriptions have source attribution, and exact article timestamps display in UTC.
@@ -63,7 +76,9 @@ npm run content -- unpublish fortnite-five-nights-at-freddys-fortnitemares
 ```
 
 Unpublishing returns the topic to draft and makes its public URL return 404.
-Unpublish before editing a published topic, then review and publish it again.
+Unpublish before revising its editorial text, subjects, or image choice through
+`draft`, then review and publish it again. Article membership can be changed while
+published using the commands below.
 The example requires its article to have been imported; it may eventually roll
 out of the publisher's current feed. Existing imports remain available locally.
 
@@ -81,13 +96,47 @@ These examples also require their original articles to remain available locally.
 PC Gamer's feed mixes news with opinions, guides, and other content; importing an
 entry does not establish its kind or make it eligible for publication.
 
+## Add or remove coverage while published
+
+Review the imported article, then attach it to the existing event:
+
+```sh
+npm run content -- attach gears-e-day-story-director-layoff "https://www.pcgamer.com/games/third-person-shooter/gears-of-war-story-director-laid-off-mere-days-after-e-day-went-gold/" reporting
+```
+
+The final argument is the article kind: `reporting`, `analysis`, `opinion`,
+`rumor`, `review`, or `guide`. A previously reviewed article must retain its kind;
+attaching it is not a way to reclassify it across other topics. New coverage is
+appended, preserving the existing order. Repeating an attachment is a no-op.
+
+To correct a grouping, remove only the topic's link to the article:
+
+```sh
+npm run content -- detach gears-e-day-story-director-layoff "https://www.pcgamer.com/games/third-person-shooter/gears-of-war-story-director-laid-off-mere-days-after-e-day-went-gold/"
+```
+
+The article remains stored and returns to the inbox if no topic still uses it.
+Repeating removal is a no-op. Removing the last article is rejected. These commands
+support drafts and published topics, but protect historical samples. The current
+review workflow retains its limit of 20 articles per topic.
+
+Both commands are transactional and lock the topic to serialize simultaneous
+edits. They preserve publication status, topic URL, headline, summary, subjects,
+event date, and feed position. An attachment fills an empty topic image when the
+article supplies one; existing images and attribution remain unchanged. If a
+removed article supplied the image, the result includes `imageSourceDetached:
+true` as a reminder to review it and explicitly replace it if unsuitable.
+
+These are local CLI operations, not public web endpoints. Updating a draft JSON
+file is separate; a later full draft save still replaces membership with that
+file's article list.
+
 ## Boundaries and checks
 
 The command uses `DATABASE_URL` and refuses anything except a loopback connection
 to `mina_development`. It never uses hosted migration credentials. No unauthenticated
 web write endpoints, scheduler, automatic grouping, AI service, or admin UI are
-added. Image metadata is retained, but this first review command does not select
-a representative topic image. Empty images leave the text layout intact.
+added. Empty or failed images leave the text layout intact.
 
 ```sh
 npm run test:import
@@ -97,4 +146,5 @@ npm run test:db
 Parser tests use synthetic RSS; database tests use the separate local test database
 and cover repeat imports, outlet-scoped GUIDs, outlet filtering, mixed-outlet
 drafts, metadata preservation, draft visibility, atomic edits, publication,
+image persistence, concurrent coverage attachment, last-article protection,
 ordering, and unpublishing. They do not depend on the live feeds.

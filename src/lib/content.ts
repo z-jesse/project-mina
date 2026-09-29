@@ -15,8 +15,8 @@ export type Topic = {
     alt: string
     sourceName: string
     sourceUrl: string
-    width: number
-    height: number
+    width?: number
+    height?: number
     position?: string
   }
   articles: {

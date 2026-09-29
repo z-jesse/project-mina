@@ -61,7 +61,7 @@ update deserves its own decision; a later article alone is not a feed bump.
 - Keep an outlet filter in the inbox: a combined newest-100 list can hide earlier
   reports from one publisher behind another publisher's volume.
 - Preserve the event date, topic URL, and existing coverage when adding sources.
-  The current draft workflow requires unpublishing before changing coverage;
-  a focused coverage-edit command can remove that interruption next.
+  The `attach`/`detach` commands now change coverage without unpublishing; editorial
+  text, subject changes, and deliberate image replacements still use redrafting.
 - Gather more reviewed matches and non-matches before automating. No recommendation
   engine, AI service, or schema change is justified by these examples alone.

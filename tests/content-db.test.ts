@@ -4,7 +4,12 @@ import { config } from 'dotenv'
 import { eq, inArray, sql } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { seedContent } from '../scripts/seed-content'
-import { inbox, saveDraft, setPublication } from '../scripts/editorial'
+import {
+  inbox,
+  saveDraft,
+  setPublication,
+  updateCoverage,
+} from '../scripts/editorial'
 import { importNews, parseNewsFeed, pcgamer } from '../scripts/rss'
 import { pcGamerFeed, testFeed } from './fixtures/rss'
 import { sampleTopics } from '../src/data/sample-topics'
@@ -203,6 +208,9 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
         // Identical GUIDs from different outlets must remain separate articles.
         const otherFeed = await parseNewsFeed(pcGamerFeed, pcgamer)
         const second = otherFeed.items[0]
+        second.imageUrl = 'https://images.example.com/second.jpg'
+        second.publishedAt = new Date('2026-09-24T08:30:00Z')
+        second.publishedDate = '2026-09-24'
         const urls = [first.url, second.url]
         const topicSlug = 'mina-test-reviewed-event'
         const draft = {
@@ -333,6 +341,9 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
           assert.equal(published?.title, draft.title)
           assert.equal(published?.isSample, false)
           assert.equal(published?.summaryIsAi, true)
+          assert.equal(published?.image?.src, first.imageUrl)
+          assert.equal(published?.image?.sourceUrl, first.url)
+          assert.equal(published?.image?.sourceName, 'Eurogamer')
           assert.deepEqual(
             published?.articles.map((a) => a.url),
             urls,
@@ -356,6 +367,115 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
             (await findTopic(topicSlug))?.articles.map((a) => a.url),
             [...urls].reverse(),
           )
+          assert.deepEqual(
+            (await findTopic(topicSlug))?.image,
+            published?.image,
+          )
+
+          // An intentional override can replace an image; invalid choices cannot.
+          await setPublication(db, topicSlug, false)
+          await assert.rejects(
+            saveDraft(db, {
+              ...draft,
+              imageArticleUrl: 'https://www.eurogamer.net/not-attached',
+            }),
+          )
+          await saveDraft(db, { ...draft, imageArticleUrl: second.url })
+          await setPublication(db, topicSlug, true)
+          assert.equal(
+            (await findTopic(topicSlug))?.image?.src,
+            second.imageUrl,
+          )
+          assert.equal(
+            (await findTopic(topicSlug))?.image?.sourceName,
+            'PC Gamer',
+          )
+
+          // A topic can start without an image, then acquire one as coverage grows.
+          await setPublication(db, topicSlug, false)
+          await db
+            .update(topics)
+            .set({ image: null })
+            .where(eq(topics.slug, topicSlug))
+          await db
+            .update(articles)
+            .set({ imageUrl: null })
+            .where(eq(articles.url, first.url))
+          await saveDraft(db, { ...draft, articles: [draft.articles[0]] })
+          await setPublication(db, topicSlug, true)
+          assert.equal((await findTopic(topicSlug))?.image, undefined)
+          await setPublication(db, topicSlug, false)
+          await saveDraft(db, draft)
+          await setPublication(db, topicSlug, true)
+          assert.equal(
+            (await findTopic(topicSlug))?.image?.src,
+            second.imageUrl,
+          )
+          assert.equal((await findTopic(topicSlug))?.date, draft.eventDate)
+
+          // Coverage edits leave the live topic's identity and editorial text intact.
+          const beforeCoverage = await findTopic(topicSlug)
+          const beforeOrder = (await listTopics()).map((topic) => topic.slug)
+          const detach = { action: 'detach', slug: topicSlug, url: second.url }
+          const removed = await updateCoverage(db, detach)
+          assert.equal(removed.changed, true)
+          assert.equal(removed.status, 'published')
+          assert.ok(
+            'imageSourceDetached' in removed && removed.imageSourceDetached,
+          )
+          assert.equal((await updateCoverage(db, detach)).changed, false)
+          assert.ok((await inbox(db)).some((row) => row.url === second.url))
+          await assert.rejects(
+            updateCoverage(db, { ...detach, url: first.url }),
+          )
+          await assert.rejects(
+            updateCoverage(db, { ...detach, slug: sampleTopics[0].slug }),
+          )
+          await assert.rejects(
+            updateCoverage(db, { ...detach, slug: 'missing-topic' }),
+          )
+          const attach = {
+            action: 'attach',
+            slug: topicSlug,
+            url: second.url,
+            kind: 'analysis',
+          }
+          await assert.rejects(
+            updateCoverage(db, { ...attach, kind: 'reporting' }),
+          )
+          await assert.rejects(
+            updateCoverage(db, {
+              ...attach,
+              url: 'https://www.eurogamer.net/not-imported',
+            }),
+          )
+          const added = await Promise.all([
+            withDatabase((connection) => updateCoverage(connection, attach)),
+            withDatabase((connection) => updateCoverage(connection, attach)),
+          ])
+          assert.deepEqual(added.map((result) => result.changed).sort(), [
+            false,
+            true,
+          ])
+          assert.deepEqual(await findTopic(topicSlug), beforeCoverage)
+          assert.deepEqual(
+            (await listTopics()).map((topic) => topic.slug),
+            beforeOrder,
+          )
+          assert.ok(!(await inbox(db)).some((row) => row.url === second.url))
+
+          // Attaching coverage fills a previously empty image without changing date.
+          await updateCoverage(db, detach)
+          await db
+            .update(topics)
+            .set({ image: null })
+            .where(eq(topics.slug, topicSlug))
+          await updateCoverage(db, attach)
+          assert.equal(
+            (await findTopic(topicSlug))?.image?.src,
+            second.imageUrl,
+          )
+          assert.equal((await findTopic(topicSlug))?.date, draft.eventDate)
         } finally {
           await db.delete(topics).where(eq(topics.slug, topicSlug))
           await db.delete(articles).where(inArray(articles.url, urls))
