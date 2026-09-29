@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowUpRight } from 'lucide-react'
 import { useState } from 'react'
 import ArticleVotes from '../components/ArticleVotes'
 import PublicationTime from '../components/PublicationTime'
+import SaveStoryButton from '../components/SaveStoryButton'
 import { getTopic } from '../server/topics.functions'
 
 export const Route = createFileRoute('/topics/$slug')({
@@ -63,7 +64,9 @@ function TopicPage() {
                 {subject === 'Grand Theft Auto VI' ? (
                   <Link to="/games/grand-theft-auto-vi">{subject}</Link>
                 ) : (
-                  subject
+                  <Link to="/" search={{ subject }}>
+                    {subject}
+                  </Link>
                 )}
               </li>
             ))}
@@ -71,6 +74,7 @@ function TopicPage() {
           <h1>{topic.title}</h1>
           <p className="topic-date">
             <time dateTime={topic.date}>{topic.dateLabel}</time>
+            <SaveStoryButton slug={topic.slug} title={topic.title} />
           </p>
           <p className="topic-summary">{topic.summary}</p>
           {topic.announcement && (

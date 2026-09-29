@@ -27,10 +27,11 @@ function usesDatabase() {
 
 async function selectTopics(
   db: NodePgDatabase<typeof schema>,
-  filter: { slug?: string; subjectId?: number } = {},
+  filter: { slug?: string; slugs?: string[]; subjectId?: number } = {},
 ): Promise<Topic[]> {
   const conditions = [eq(topics.status, 'published')]
   if (filter.slug) conditions.push(eq(topics.slug, filter.slug))
+  if (filter.slugs) conditions.push(inArray(topics.slug, filter.slugs))
   if (filter.subjectId !== undefined) {
     conditions.push(
       inArray(
@@ -47,7 +48,7 @@ async function selectTopics(
     .from(topics)
     .where(and(...conditions))
     .orderBy(desc(topics.eventDate), desc(topics.id))
-    .limit(filter.slug ? 1 : 50)
+    .limit(filter.slug ? 1 : filter.slugs ? 100 : 50)
   if (!rows.length) return []
 
   const ids = rows.map((row) => row.id)
@@ -110,6 +111,13 @@ export async function listTopics() {
 export async function findTopic(slug: string) {
   if (!usesDatabase()) return sampleTopics.find((topic) => topic.slug === slug)
   return withDatabase(async (db) => (await selectTopics(db, { slug }))[0])
+}
+
+export async function findSavedTopics(slugs: string[]) {
+  if (!slugs.length) return []
+  if (!usesDatabase())
+    return sampleTopics.filter((topic) => slugs.includes(topic.slug))
+  return withDatabase((db) => selectTopics(db, { slugs }))
 }
 
 export async function getGtaGame() {

@@ -3,6 +3,7 @@ import { ArrowUpRight } from 'lucide-react'
 import type { Topic } from '../lib/content'
 import ArticleThumbnail from './ArticleThumbnail'
 import ArticleVotes from './ArticleVotes'
+import SaveStoryButton from './SaveStoryButton'
 
 export default function TopicList({
   topics,
@@ -24,7 +25,11 @@ export default function TopicList({
               aria-labelledby={`title-${topic.slug}`}
             >
               {showSubject && (
-                <p className="feed-subject">{topic.subjects[0]}</p>
+                <p className="feed-subject">
+                  <Link to="/" search={{ subject: topic.subjects[0] }}>
+                    {topic.subjects[0]}
+                  </Link>
+                </p>
               )}
               <h2 id={`title-${topic.slug}`}>
                 <Link to="/topics/$slug" params={{ slug: topic.slug }}>
@@ -45,6 +50,7 @@ export default function TopicList({
                 >
                   {topic.dateLabel}
                 </time>
+                <SaveStoryButton slug={topic.slug} title={topic.title} />
               </p>
               <ArticleThumbnail
                 src={topic.image?.src ?? singleArticle?.image}

@@ -119,6 +119,15 @@ cost, review effort, and publication delay must be measured, not assumed.
 ## What exists today
 
 - Sample and database-backed feeds, topic pages, and a GTA VI page.
+- A shared search header and Home / For You / Saved navigation. For You is a
+  labeled placeholder. URL-backed search and subject filters narrow the latest
+  50 published stories, including article headlines and outlet names; common
+  GTA 6 aliases are supported. The Explore row uses subjects with actual coverage,
+  without claiming they are trending.
+- Browser-local saved topics (up to 100), with controls on feed cards and topic
+  pages. Saved retrieves current published data outside the latest-feed window;
+  removed or unpublished topics offer bookmark removal. Saves are not account
+  synced and last only for the page session when storage is unavailable.
 - Three-outlet local RSS import (Eurogamer, PC Gamer, and VGC), metadata deduplication, and explicit CLI topic
   drafting/publication. Imports alone do not create topics or publish articles.
 - Required editorial headline, description, and summary in the draft workflow.

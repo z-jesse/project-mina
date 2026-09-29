@@ -21,7 +21,12 @@ import {
   topics,
   topicSubjects,
 } from '../src/db/content-schema'
-import { findTopic, getGtaGame, listTopics } from '../src/server/topics.server'
+import {
+  findSavedTopics,
+  findTopic,
+  getGtaGame,
+  listTopics,
+} from '../src/server/topics.server'
 
 config({ path: ['.env.local', '.env'], quiet: true })
 
@@ -130,6 +135,12 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
         try {
           assert.equal((await listTopics()).length, sampleTopics.length + 1)
           assert.equal(await findTopic('test-draft'), undefined)
+          assert.deepEqual(
+            (await findSavedTopics(['test-draft', 'test-live'])).map(
+              (topic) => topic.slug,
+            ),
+            ['test-live'],
+          )
           assert.equal((await findTopic('test-live'))?.isSample, false)
           const [gta] = await db
             .select()
@@ -514,6 +525,51 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
           assert.deepEqual(await listTopics(), before)
         } finally {
           await db.delete(articles).where(eq(articles.url, feed.items[0].url))
+        }
+      })
+    },
+  )
+
+  await t.test(
+    'saved topics remain readable outside the latest feed window',
+    async () => {
+      await withDatabase(async (db) => {
+        const rows = await db
+          .insert(topics)
+          .values(
+            Array.from({ length: 51 }, (_, index) => ({
+              slug: `mina-saved-window-${index}`,
+              title: 'Newer test topic',
+              eventDate: '2099-01-01',
+              description: '',
+              summary: '',
+              status: 'published' as const,
+            })),
+          )
+          .returning({ id: topics.id })
+        try {
+          const archived = sampleTopics[0]
+          assert.ok(
+            !(await listTopics()).some((topic) => topic.slug === archived.slug),
+          )
+          assert.deepEqual(
+            (
+              await findSavedTopics([
+                archived.slug,
+                archived.slug,
+                'missing-topic',
+              ])
+            ).map((topic) => topic.slug),
+            [archived.slug],
+          )
+          assert.deepEqual(await findSavedTopics([]), [])
+        } finally {
+          await db.delete(topics).where(
+            inArray(
+              topics.id,
+              rows.map((row) => row.id),
+            ),
+          )
         }
       })
     },
