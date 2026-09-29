@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { articleUrl, parseNewsFeed } from '../scripts/rss'
+import { articleUrl, parseNewsFeed, pcgamer } from '../scripts/rss'
 
-import { testFeed } from './fixtures/rss'
+import { pcGamerFeed, testFeed } from './fixtures/rss'
 
 test('RSS preserves metadata and UTC timestamp, strips markup, and only keeps the description', async () => {
   const { items, skipped } = await parseNewsFeed(testFeed)
@@ -71,4 +71,66 @@ test('URL normalization removes tracking but retains meaningful parameters', () 
     'https://user:password@www.eurogamer.net/story',
   ])
     assert.throws(() => articleUrl(url))
+})
+
+test('PC Gamer keeps source attribution, image MIME metadata, and a short excerpt', async () => {
+  const feed = await parseNewsFeed(pcGamerFeed, pcgamer)
+  assert.equal(feed.source.slug, 'pc-gamer')
+  assert.equal(feed.skipped, 0)
+  assert.equal(
+    feed.items[0].url,
+    'https://www.pcgamer.com/mina-test-announcement',
+  )
+  assert.equal(feed.items[0].imageUrl, 'https://images.example.com/test.jpg')
+  assert.equal(
+    feed.items[0].description,
+    'A short publisher description & details.',
+  )
+  assert.equal(
+    feed.items[0].publishedAt.toISOString(),
+    '2026-09-25T08:30:00.000Z',
+  )
+
+  const enclosure = pcGamerFeed.replace(
+    /<media:content[^>]+\/>/,
+    '<enclosure type="image/png" url="https://images.example.com/enclosure.png" length="0"/>',
+  )
+  assert.equal(
+    (await parseNewsFeed(enclosure, pcgamer)).items[0].imageUrl,
+    'https://images.example.com/enclosure.png',
+  )
+  assert.equal(
+    articleUrl('https://pcgamer.com/story?utm_source=rss#comments'),
+    'https://www.pcgamer.com/story',
+  )
+})
+
+test('each feed rejects other outlets and lookalike domains', async () => {
+  assert.equal((await parseNewsFeed(pcGamerFeed)).skipped, 1)
+  assert.equal((await parseNewsFeed(testFeed, pcgamer)).skipped, 1)
+  assert.equal(
+    (
+      await parseNewsFeed(
+        pcGamerFeed.replaceAll(
+          'www.pcgamer.com',
+          'www.pcgamer.com.evil.example',
+        ),
+        pcgamer,
+      )
+    ).skipped,
+    1,
+  )
+  assert.throws(() => articleUrl('https://unconfigured.example/story'))
+})
+
+test('PC Gamer accepts its larger feed but still bounds response size', async () => {
+  const largerFeed = pcGamerFeed.replace(
+    'Full article body must never be stored.',
+    'x'.repeat(1_100_000),
+  )
+  const feed = await parseNewsFeed(largerFeed, pcgamer)
+  assert.equal(feed.items.length, 1)
+  assert.ok(JSON.stringify(feed).length < 2000)
+  await assert.rejects(parseNewsFeed(largerFeed))
+  await assert.rejects(parseNewsFeed('x'.repeat(2_000_001), pcgamer))
 })

@@ -115,7 +115,7 @@ cost, review effort, and publication delay must be measured, not assumed.
 ## What exists today
 
 - Sample and database-backed feeds, topic pages, and a GTA VI page.
-- One-outlet local RSS import, metadata deduplication, and explicit CLI topic
+- Two-outlet local RSS import (Eurogamer and PC Gamer), metadata deduplication, and explicit CLI topic
   drafting/publication. Imports alone do not create topics or publish articles.
 - Required editorial headline, description, and summary in the draft workflow.
   Published edits currently require unpublishing; there is no revision history.
@@ -145,6 +145,9 @@ a monorepo, new infrastructure, or immediate community tables.
 2. **Validate grouping with real coverage.** Extend the small outlet set and record
    reviewed event groupings and ambiguous examples before building automatic
    matching. Preserve the manual publication boundary during that evaluation.
+   [The first two-outlet review](grouping-review.md) records same-event matches,
+   a same-game non-match, and delayed reporting; it is a starting set, not a
+   validated automatic matching policy.
 3. **Implement a narrow community slice.** Accounts and persistent article votes,
    then shared topic discussion with article references. Scope moderation and
    correction behavior with these features rather than adding a reputation score.

@@ -7,3 +7,7 @@ export const testFeed = `<?xml version="1.0"?>
 <media:content medium="image" url="https://images.example.com/test.jpg"/>
 <content:encoded xmlns:content="http://purl.org/rss/1.0/modules/content/"><![CDATA[Full article body must never be stored.]]></content:encoded>
 </item></channel></rss>`
+
+export const pcGamerFeed = testFeed
+  .replaceAll('www.eurogamer.net', 'www.pcgamer.com')
+  .replace('medium="image"', 'type="image/jpeg"')

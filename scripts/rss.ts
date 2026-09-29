@@ -8,27 +8,41 @@ export const eurogamer = {
   name: 'Eurogamer',
   siteUrl: 'https://www.eurogamer.net',
   feedUrl: 'https://www.eurogamer.net/feed/news',
+  maxBytes: 1_000_000,
 }
-const maxBytes = 1_000_000
+export const pcgamer = {
+  slug: 'pc-gamer',
+  name: 'PC Gamer',
+  siteUrl: 'https://www.pcgamer.com',
+  feedUrl: 'https://www.pcgamer.com/rss/',
+  maxBytes: 2_000_000,
+}
+export const newsSources = [eurogamer, pcgamer]
+type NewsSource = (typeof newsSources)[number]
 const parser = new Parser<
   Record<string, never>,
-  { media?: { $?: { url?: string; medium?: string } }[] }
+  { media?: { $?: { url?: string; medium?: string; type?: string } }[] }
 >({
   customFields: { item: [['media:content', 'media', { keepArray: true }]] },
 })
 
-export function articleUrl(value: string) {
+export function articleUrl(value: string, source?: NewsSource) {
   const url = new URL(value)
+  const matchedSource = newsSources.find((candidate) => {
+    const host = new URL(candidate.siteUrl).hostname
+    return [host, host.replace(/^www\./, '')].includes(url.hostname)
+  })
   if (
     url.protocol !== 'https:' ||
     url.username ||
     url.password ||
-    !['www.eurogamer.net', 'eurogamer.net'].includes(url.hostname) ||
+    !matchedSource ||
+    (source && source.slug !== matchedSource.slug) ||
     url.port
   ) {
-    throw new Error('Expected an HTTPS Eurogamer article URL.')
+    throw new Error('Expected an HTTPS article URL from the selected outlet.')
   }
-  url.hostname = 'www.eurogamer.net'
+  url.hostname = new URL(matchedSource.siteUrl).hostname
   url.hash = ''
   for (const key of [...url.searchParams.keys()]) {
     if (/^utm_/i.test(key) || ['fbclid', 'gclid'].includes(key))
@@ -56,8 +70,11 @@ const plainText = (value: string) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-export async function parseNewsFeed(xml: string) {
-  if (Buffer.byteLength(xml) > maxBytes || /<!DOCTYPE|<!ENTITY/i.test(xml)) {
+export async function parseNewsFeed(xml: string, source = eurogamer) {
+  if (
+    Buffer.byteLength(xml) > source.maxBytes ||
+    /<!DOCTYPE|<!ENTITY/i.test(xml)
+  ) {
     throw new Error(
       'Feed exceeds the size limit or contains unsupported XML declarations.',
     )
@@ -89,7 +106,7 @@ export async function parseNewsFeed(xml: string) {
         '',
       )
       items.push({
-        url: articleUrl(item.link ?? ''),
+        url: articleUrl(item.link ?? '', source),
         title,
         author: item.creator
           ? plainText(item.creator).slice(0, 300)
@@ -101,7 +118,14 @@ export async function parseNewsFeed(xml: string) {
             ? `${snippet.slice(0, 319).trimEnd()}…`
             : snippet,
         imageUrl: imageUrl(
-          item.media?.find((media) => media.$?.medium === 'image')?.$?.url,
+          item.media?.find(
+            (media) =>
+              media.$?.medium === 'image' ||
+              media.$?.type?.startsWith('image/'),
+          )?.$?.url ??
+            (item.enclosure?.type?.startsWith('image/')
+              ? item.enclosure.url
+              : undefined),
         ),
         feedGuid: item.guid?.trim().slice(0, 2048) || undefined,
       })
@@ -109,11 +133,15 @@ export async function parseNewsFeed(xml: string) {
       skipped++
     }
   }
-  return { items, skipped: skipped + Math.max(0, feed.items.length - 100) }
+  return {
+    source,
+    items,
+    skipped: skipped + Math.max(0, feed.items.length - 100),
+  }
 }
 
-export async function fetchNewsFeed() {
-  const response = await fetch(eurogamer.feedUrl, {
+export async function fetchNewsFeed(source = eurogamer) {
+  const response = await fetch(source.feedUrl, {
     signal: AbortSignal.timeout(20_000),
     redirect: 'error',
     headers: {
@@ -131,13 +159,14 @@ export async function fetchNewsFeed() {
       const { done, value } = await reader.read()
       if (done) break
       size += value.byteLength
-      if (size > maxBytes) throw new Error('Feed exceeds the size limit.')
+      if (size > source.maxBytes)
+        throw new Error('Feed exceeds the size limit.')
       chunks.push(value)
     }
   } finally {
     await reader.cancel()
   }
-  return parseNewsFeed(Buffer.concat(chunks).toString('utf8'))
+  return parseNewsFeed(Buffer.concat(chunks).toString('utf8'), source)
 }
 
 export async function importNews(
@@ -145,11 +174,19 @@ export async function importNews(
   feed: Awaited<ReturnType<typeof parseNewsFeed>>,
 ) {
   return db.transaction(async (tx) => {
-    await tx.insert(schema.outlets).values(eurogamer).onConflictDoNothing()
+    const { source } = feed
+    await tx
+      .insert(schema.outlets)
+      .values({
+        slug: source.slug,
+        name: source.name,
+        siteUrl: source.siteUrl,
+      })
+      .onConflictDoNothing()
     const [outlet] = await tx
       .select()
       .from(schema.outlets)
-      .where(eq(schema.outlets.slug, eurogamer.slug))
+      .where(eq(schema.outlets.slug, source.slug))
     let inserted = 0
     for (const item of feed.items) {
       // Preserve existing metadata/editorial changes; URL and outlet/GUID dedupe
@@ -159,7 +196,7 @@ export async function importNews(
         .values({
           ...item,
           outletId: outlet.id,
-          feedUrl: eurogamer.feedUrl,
+          feedUrl: source.feedUrl,
           importedAt: new Date(),
           kind: null,
         })

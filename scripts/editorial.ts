@@ -34,7 +34,7 @@ export const draftInput = z
       .array(
         z
           .object({
-            url: z.string().transform(articleUrl),
+            url: z.string().transform((value) => articleUrl(value)),
             kind: z.enum(schema.articleKind.enumValues),
           })
           .strict(),
@@ -55,7 +55,10 @@ export const draftInput = z
     }
   })
 
-export async function inbox(db: NodePgDatabase<typeof schema>) {
+export async function inbox(
+  db: NodePgDatabase<typeof schema>,
+  outletSlug?: string,
+) {
   return db
     .select({
       id: schema.articles.id,
@@ -64,11 +67,14 @@ export async function inbox(db: NodePgDatabase<typeof schema>) {
       author: schema.articles.author,
       publishedAt: schema.articles.publishedAt,
       description: schema.articles.description,
+      outlet: schema.outlets.name,
     })
     .from(schema.articles)
+    .innerJoin(schema.outlets, eq(schema.articles.outletId, schema.outlets.id))
     .where(
       and(
         isNotNull(schema.articles.importedAt),
+        outletSlug ? eq(schema.outlets.slug, outletSlug) : undefined,
         notExists(
           db
             .select({ id: schema.topicArticles.topicId })

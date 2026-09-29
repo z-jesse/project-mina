@@ -5,8 +5,8 @@ import { eq, inArray, sql } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { seedContent } from '../scripts/seed-content'
 import { inbox, saveDraft, setPublication } from '../scripts/editorial'
-import { importNews, parseNewsFeed } from '../scripts/rss'
-import { testFeed } from './fixtures/rss'
+import { importNews, parseNewsFeed, pcgamer } from '../scripts/rss'
+import { pcGamerFeed, testFeed } from './fixtures/rss'
 import { sampleTopics } from '../src/data/sample-topics'
 import { withDatabase } from '../src/db/client.server'
 import {
@@ -200,11 +200,9 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
       await withDatabase(async (db) => {
         const feed = await parseNewsFeed(testFeed)
         const first = feed.items[0]
-        const second = {
-          ...first,
-          url: 'https://www.eurogamer.net/mina-test-reaction',
-          feedGuid: 'mina-test-reaction-guid',
-        }
+        // Identical GUIDs from different outlets must remain separate articles.
+        const otherFeed = await parseNewsFeed(pcGamerFeed, pcgamer)
+        const second = otherFeed.items[0]
         const urls = [first.url, second.url]
         const topicSlug = 'mina-test-reviewed-event'
         const draft = {
@@ -228,9 +226,19 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
         }
         try {
           assert.deepEqual(
-            await importNews(db, { items: [first, first, second], skipped: 0 }),
-            { inserted: 2, duplicates: 1, skipped: 0 },
+            await importNews(db, { ...feed, items: [first, first] }),
+            { inserted: 1, duplicates: 1, skipped: 0 },
           )
+          assert.deepEqual(await importNews(db, otherFeed), {
+            inserted: 1,
+            duplicates: 0,
+            skipped: 0,
+          })
+          assert.deepEqual(await importNews(db, otherFeed), {
+            inserted: 0,
+            duplicates: 1,
+            skipped: 0,
+          })
           assert.deepEqual(await importNews(db, feed), {
             inserted: 0,
             duplicates: 1,
@@ -239,6 +247,7 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
           assert.equal(
             (
               await importNews(db, {
+                ...feed,
                 items: [
                   {
                     ...first,
@@ -253,6 +262,7 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
           assert.equal(
             (
               await importNews(db, {
+                ...feed,
                 items: [{ ...first, feedGuid: 'changed-guid' }],
                 skipped: 0,
               })
@@ -261,6 +271,18 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
           )
           assert.equal((await listTopics()).length, sampleTopics.length)
           assert.ok((await inbox(db)).some((row) => row.url === first.url))
+          const pcInbox = await inbox(db, 'pc-gamer')
+          assert.deepEqual(
+            pcInbox.map((row) => row.url),
+            [second.url],
+          )
+          assert.equal(pcInbox[0].outlet, 'PC Gamer')
+          assert.equal((await inbox(db, 'eurogamer'))[0].url, first.url)
+          const [stored] = await db
+            .select()
+            .from(articles)
+            .where(eq(articles.url, second.url))
+          assert.equal(stored.feedUrl, pcgamer.feedUrl)
           await db
             .update(articles)
             .set({ title: 'Editorial correction' })
@@ -317,6 +339,10 @@ test('content migration, seed, queries, and access boundaries', async (t) => {
           )
           assert.equal(published?.articles[0].date, '2026-09-25T08:30:00.000Z')
           assert.equal(published?.articles[0].descriptionSource, 'publisher')
+          assert.deepEqual(
+            published?.articles.map((article) => article.outlet),
+            ['Eurogamer', 'PC Gamer'],
+          )
           assert.equal((await getGtaGame())?.topics.length, 4)
           await assert.rejects(saveDraft(db, draft))
           await setPublication(db, topicSlug, false)

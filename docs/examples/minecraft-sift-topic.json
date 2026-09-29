@@ -1,0 +1,22 @@
+{
+  "slug": "minecraft-sift-dimension-announced",
+  "title": "Minecraft announces The Sift, a new dimension coming in 2027",
+  "eventDate": "2026-09-26",
+  "description": "Mojang revealed a fourth dimension for Minecraft at Minecraft Live, with a release planned for Java and Bedrock in 2027.",
+  "summary": "Eurogamer and PC Gamer report that Mojang announced The Sift at Minecraft Live on September 26. The new dimension is planned for Minecraft Java and Bedrock in 2027 and will also appear in Minecraft Dungeons 2. Both articles cover the same reveal; a precise release date for the base game's update has not been announced.",
+  "summaryIsAi": true,
+  "subjects": [
+    { "slug": "minecraft", "name": "Minecraft", "kind": "game" },
+    { "slug": "mojang", "name": "Mojang", "kind": "company" }
+  ],
+  "articles": [
+    {
+      "url": "https://www.pcgamer.com/games/survival-crafting/minecraft-is-getting-its-first-new-dimension-in-15-years-and-it-is-riotously-pink/",
+      "kind": "reporting"
+    },
+    {
+      "url": "https://www.eurogamer.net/minecraft-the-sift-new-dimension-2027",
+      "kind": "reporting"
+    }
+  ]
+}

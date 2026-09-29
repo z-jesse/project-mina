@@ -1,0 +1,23 @@
+{
+  "slug": "gears-e-day-story-director-layoff",
+  "title": "Gears of War: E-Day story director Juan Vaca announces his layoff",
+  "eventDate": "2026-09-22",
+  "description": "Juan Vaca said he was affected by Microsoft's layoffs shortly before Gears of War: E-Day's planned launch.",
+  "summary": "Eurogamer and PC Gamer cover Juan Vaca's announcement that he was laid off from The Coalition. Both reports refer to the same LinkedIn statement and note that Gears of War: E-Day had recently gone gold. Eurogamer published its report on September 23; PC Gamer followed on September 27. The later coverage does not describe a second layoff event.",
+  "summaryIsAi": true,
+  "subjects": [
+    { "slug": "gears-of-war-e-day", "name": "Gears of War: E-Day", "kind": "game" },
+    { "slug": "the-coalition", "name": "The Coalition", "kind": "company" },
+    { "slug": "layoffs", "name": "Layoffs", "kind": "subject" }
+  ],
+  "articles": [
+    {
+      "url": "https://www.eurogamer.net/gears-of-war-e-day-story-director-laid-off-xbox-cuts",
+      "kind": "reporting"
+    },
+    {
+      "url": "https://www.pcgamer.com/games/third-person-shooter/gears-of-war-story-director-laid-off-mere-days-after-e-day-went-gold/",
+      "kind": "reporting"
+    }
+  ]
+}
