@@ -129,12 +129,6 @@ function TopicPage() {
                   <p className="topic-article-description">
                     {article.description}
                   </p>
-                  {article.descriptionSource === 'publisher' &&
-                    article.description && (
-                      <p className="topic-article-author">
-                        Description from {article.outlet}’s RSS feed.
-                      </p>
-                    )}
                   {article.author && (
                     <p className="topic-article-author">By {article.author}</p>
                   )}

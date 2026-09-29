@@ -21,12 +21,15 @@ export default function ArticleVotes({
 
   return (
     <fieldset className="article-votes">
-      <legend className="sr-only">Rate this article: {title}</legend>
+      <legend className="sr-only">
+        Rate this article: {title}. Only your vote in this browser, not
+        community totals.
+      </legend>
       <button
         type="button"
         aria-label={`Helpful article: ${vote === 'helpful' ? 1 : 0} local votes`}
         aria-pressed={vote === 'helpful'}
-        title="Helpful article — click again to remove your vote"
+        title="Helpful article — saved only in this browser. Click again to remove your vote."
         onClick={() => toggleArticleVote(url, 'helpful')}
       >
         <ThumbsUp size={15} aria-hidden="true" />
@@ -36,22 +39,12 @@ export default function ArticleVotes({
         type="button"
         aria-label={`Unhelpful article: ${vote === 'unhelpful' ? 1 : 0} local votes`}
         aria-pressed={vote === 'unhelpful'}
-        title="Unhelpful article — click again to remove your vote"
+        title="Unhelpful article — saved only in this browser. Click again to remove your vote."
         onClick={() => toggleArticleVote(url, 'unhelpful')}
       >
         <ThumbsDown size={15} aria-hidden="true" />
         <span>{vote === 'unhelpful' ? 1 : 0}</span>
       </button>
-      <span
-        className="article-votes-note"
-        title="Only your vote in this browser; these are not community totals."
-      >
-        Local preview
-        <span className="sr-only">
-          {' '}
-          — only your vote, not community totals.
-        </span>
-      </span>
     </fieldset>
   )
 }

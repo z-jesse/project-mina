@@ -121,8 +121,10 @@ cost, review effort, and publication delay must be measured, not assumed.
   Published edits currently require unpublishing; there is no revision history.
 - Feed ordering by event date, then topic ID; no recommendation engine or
   meaningful-update ranking. Precise article timestamps exist for RSS imports.
-- Browser-local votes with separate zero/one counts, persistence where storage
-  is available, and clear preview labels. No community totals or server writes.
+- Browser-local votes with separate zero/one counts and persistence where storage
+  is available. Tooltips and accessible text explain the local behavior; repeated
+  preview and RSS-description labels are omitted from article cards. Outlet
+  attribution and source links remain. No community totals or server writes.
 - Compact topic cards on the main feed and game page. All primary headlines open
   topics. A single expandable article count exposes source links and local votes
   for one or many articles, in existing editorial order without a featured-source
